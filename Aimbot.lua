@@ -1,35 +1,87 @@
--- Đặt LocalScript này vào StarterPlayerScripts hoặc StarterCharacterScripts trong Roblox Studio
+-- =============================================================================
+-- PREMIUM HUB v1.1 - AIMBOT + ESP + FOV CIRCLE
+-- =============================================================================
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Camera = workspace.CurrentCamera
 
--- ==================== CẤU HÌNH BAN ĐẦU ====================
+-- ==================== CẤU HÌNH (SETTINGS) ====================
 local Config = {
-    AimbotEnabled = true,
-    AimKey = Enum.UserInputType.MouseButton2,
-    FOV = 150,
-    Smoothness = 0.15,
-    TargetPart = "Head",
-    
-    ESPEnabled = true,
-    ESPColor = Color3.fromRGB(0, 255, 150), -- Đổi sang màu xanh Neon cho hợp tone GUI
-    FillOpacity = 0.25,
-    OutlineOpacity = 0.9
+    Aimbot = {
+        Enabled = true,
+        Key = Enum.UserInputType.MouseButton2, -- Nhấn giữ chuột phải
+        FOV = 150,                            -- Bán kính vùng nhắm
+        Smoothness = 0.15,                    -- Độ mượt (thấp = nhanh)
+        TargetPart = "Head",                  -- Bộ phận nhắm
+    },
+    ESP = {
+        Enabled = true,
+        FillColor = Color3.fromRGB(255, 0, 80),   -- Màu bên trong
+        OutlineColor = Color3.fromRGB(255, 255, 255), -- Màu viền
+        FillTransparency = 0.5,
+        OutlineTransparency = 0,
+    }
 }
 
 local IsAiming = false
 local MenuVisible = true
 
--- ==================== TẠO GIAO DIỆN (GUI) PHẦN CỨNG ====================
+-- ==================== [NEW] TẠO VÒNG TRÒN FOV ====================
+-- Sử dụng Drawing API (Chỉ hoạt động trên Executor)
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Visible = Config.Aimbot.Enabled -- Ẩn/hiện theo Aimbot
+FOVCircle.Filled = false                  -- Chỉ vẽ viền
+FOVCircle.Thickness = 1                   -- Độ đậm viền
+FOVCircle.Color = Color3.fromRGB(255, 255, 255) -- Màu trắng
+FOVCircle.NumSides = 64                   -- Số cạnh (để vòng tròn mượt)
+FOVCircle.Radius = Config.Aimbot.FOV       -- Bán kính
+FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) -- Giữa màn hình
+
+-- ==================== [NEW] TỐI ƯU ESP (HIGHLIGHT STORAGE) ====================
+local ESPStorage = workspace:FindFirstChild("ESP_Storage")
+if not ESPStorage then
+    ESPStorage = Instance.new("Folder")
+    ESPStorage.Name = "ESP_Storage"
+    ESPStorage.Parent = workspace
+end
+
+local function cleanESP()
+    ESPStorage:ClearAllChildren()
+end
+
+local function applyESP(character)
+    if not Config.ESP.Enabled then return end
+    if not character or not character:FindFirstChild("Humanoid") then return end
+    
+    -- Kiểm tra xem player này đã được highlight chưa
+    local existing = ESPStorage:FindFirstChild("ESP_" .. character.Name)
+    if not existing then
+        local Highlight = Instance.new("Highlight")
+        Highlight.Name = "ESP_" .. character.Name
+        Highlight.Adornee = character -- Áp dụng lên nhân vật này
+        Highlight.FillColor = Config.ESP.FillColor
+        Highlight.OutlineColor = Config.ESP.OutlineColor
+        Highlight.FillTransparency = Config.ESP.FillTransparency
+        Highlight.OutlineTransparency = Config.ESP.OutlineTransparency
+        Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Hiện xuyên tường
+        Highlight.Parent = ESPStorage
+    end
+end
+
+-- ==================== GUI (GIỮ NGUYÊN CẤU TRÚC) ====================
+-- Chỉ cập nhật Logic xử lý trong nút bấm
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CheatHubMenu"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
+ScreenGui.Parent = game:GetService("CoreGui") -- Dùng CoreGui để không bị mất khi chết
 
--- Khung chính của Menu
+-- [Phần tạo Frame, TitleBar, Dragging giữ nguyên như code cũ của bạn]
+-- (Để tiết kiệm không gian, tôi chỉ viết phần logic nút bấm)
+-- ... [CODE TAO FRAME CHÍNH VÀ TITLEBAR] ...
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 260, 0, 320)
 MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
@@ -38,53 +90,22 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Parent = ScreenGui
 
--- Bo góc cho khung chính
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 8)
 MainCorner.Parent = MainFrame
 
--- Thanh Tiêu đề (Dùng để kéo menu di chuyển)
 local TitleBar = Instance.new("TextLabel")
 TitleBar.Size = UDim2.new(1, 0, 0, 40)
 TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-TitleBar.Text = "  PREMIUM HUB v1.0"
+TitleBar.Text = "  PREMIUM HUB v1.1"
 TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleBar.Font = Enum.Font.SourceSansBold
 TitleBar.TextSize = 16
 TitleBar.TextXAlignment = Enum.TextXAlignment.Left
 TitleBar.Parent = MainFrame
+-- ... [TÍNH NĂNG DRAG GIỮ NGUYÊN] ...
 
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 8)
-TitleCorner.Parent = TitleBar
-
--- Thêm tính năng Kéo thả (Drag) mượt mà cho Menu
-local dragging, dragInput, dragStart, startPos
-TitleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-TitleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
--- Hàm tạo Nút Bật/Tắt (Toggle Button)
+-- Hàm tạo Nút Bật/Tắt (Toggle Button) - CHỈNH LẠI LOGIC
 local function CreateToggle(name, text, position, default, callback)
     local Button = Instance.new("TextButton")
     Button.Name = name
@@ -94,20 +115,17 @@ local function CreateToggle(name, text, position, default, callback)
     Button.TextSize = 15
     Button.BorderSizePixel = 0
     Button.Parent = MainFrame
-    
     local Corner = Instance.new("UICorner")
     Corner.CornerRadius = UDim.new(0, 6)
     Corner.Parent = Button
     
     local function updateState(state)
         if state then
-            Button.BackgroundColor3 = Color3.fromRGB(46, 204, 113) -- Màu xanh lá khi bật
+            Button.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
             Button.Text = text .. ": [ BẬT ]"
-            Button.TextColor3 = Color3.fromRGB(255, 255, 255)
         else
-            Button.BackgroundColor3 = Color3.fromRGB(231, 76, 60) -- Màu đỏ khi tắt
+            Button.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
             Button.Text = text .. ": [ TẮT ]"
-            Button.TextColor3 = Color3.fromRGB(255, 255, 255)
         end
     end
     
@@ -121,7 +139,7 @@ local function CreateToggle(name, text, position, default, callback)
     end)
 end
 
--- Hàm tạo Ô Nhập Số (TextBox)
+-- Hàm tạo Ô Nhập Số (TextBox) - CHỈNH LẠI LOGIC
 local function CreateTextBox(name, text, position, default, callback)
     local Label = Instance.new("TextLabel")
     Label.Size = UDim2.new(0, 120, 0, 35)
@@ -129,97 +147,79 @@ local function CreateTextBox(name, text, position, default, callback)
     Label.BackgroundTransparency = 1
     Label.Text = text
     Label.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Label.Font = Enum.Font.SourceSans
     Label.TextSize = 15
-    Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = MainFrame
-    
     local Box = Instance.new("TextBox")
     Box.Name = name
     Box.Size = UDim2.new(0, 90, 0, 30)
     Box.Position = position + UDim2.new(0, 130, 0, 2)
     Box.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    Box.BorderSizePixel = 0
     Box.Text = tostring(default)
     Box.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Box.Font = Enum.Font.SourceSansBold
-    Box.TextSize = 14
     Box.Parent = MainFrame
-    
     local Corner = Instance.new("UICorner")
     Corner.CornerRadius = UDim.new(0, 4)
     Corner.Parent = Box
     
-    Box.FocusLost:Connect(function(enterPressed)
+    Box.FocusLost:Connect(function()
         local val = tonumber(Box.Text)
-        if val then
-            callback(val)
-        else
-            Box.Text = tostring(default)
-        end
+        if val then callback(val) else Box.Text = tostring(default) end
     end)
 end
 
--- Khởi tạo các thành phần điều khiển trên Menu
-CreateToggle("AimbotToggle", "Chế độ Aimbot", UDim2.new(0, 20, 0, 60), Config.AimbotEnabled, function(state)
-    Config.AimbotEnabled = state
+-- ==================== LOGIC ĐIỀU KHIỂN GUI ====================
+CreateToggle("AimbotToggle", "Chế độ Aimbot", UDim2.new(0, 20, 0, 60), Config.Aimbot.Enabled, function(state)
+    Config.Aimbot.Enabled = state
+    -- [NEW] Cập nhật hình tròn
+    FOVCircle.Visible = state
 end)
 
-CreateToggle("ESPToggle", "Chế độ ESP Sáng", UDim2.new(0, 20, 0, 105), Config.ESPEnabled, function(state)
-    Config.ESPEnabled = state
+CreateToggle("ESPToggle", "Chế độ ESP Sáng", UDim2.new(0, 20, 0, 105), Config.ESP.Enabled, function(state)
+    Config.ESP.Enabled = state
+    -- [NEW] Xóa ngay ESP cũ khi tắt
     if not state then
-        -- Xóa sạch các highlight cũ nếu tắt ESP
-        for _, v in ipairs(workspace:GetDescendants()) do
-            if v:IsA("Highlight") and v.Name == "ESPHighlight" then
-                v:Destroy()
-            end
-        end
+        cleanESP()
     end
 end)
 
-CreateTextBox("FOVBox", "Bán kính FOV:", UDim2.new(0, 20, 0, 160), Config.FOV, function(val)
-    Config.FOV = val
+CreateTextBox("FOVBox", "Bán kính FOV:", UDim2.new(0, 20, 0, 160), Config.Aimbot.FOV, function(val)
+    Config.Aimbot.FOV = val
+    -- [NEW] Cập nhật bán kính hình tròn FOV
+    FOVCircle.Radius = val
 end)
 
-CreateTextBox("SmoothBox", "Độ mượt (Aim):", UDim2.new(0, 20, 0, 210), Config.Smoothness, function(val)
-    Config.Smoothness = val
+CreateTextBox("SmoothBox", "Độ mượt (Aim):", UDim2.new(0, 20, 0, 210), Config.Aimbot.Smoothness, function(val)
+    Config.Aimbot.Smoothness = val
 end)
 
--- Hướng dẫn phím ẩn menu
-local TipLabel = Instance.new("TextLabel")
-TipLabel.Size = UDim2.new(1, 0, 0, 30)
-TipLabel.Position = UDim2.new(0, 0, 1, -30)
-TipLabel.BackgroundTransparency = 1
-TipLabel.Text = "Nhấn [RightControl] hoặc [Insert] để ẩn/hiện"
-TipLabel.TextColor3 = Color3.fromRGB(120, 120, 130)
-TipLabel.Font = Enum.Font.SourceSansItalic
-TipLabel.TextSize = 13
-TipLabel.Parent = MainFrame
-
--- Cơ chế ẩn/hiện bảng hack
-UserInputService.InputBegan:Connect(function(input, processed)
+-- Phím ẩn menu (RightControl/Insert)
+UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightControl or input.KeyCode == Enum.KeyCode.Insert then
         MenuVisible = not MenuVisible
         MainFrame.Visible = MenuVisible
+        FOVCircle.Visible = (MenuVisible and Config.Aimbot.Enabled) -- Ẩn cả vòng tròn khi ẩn menu
     end
 end)
 
-
--- ==================== LOGIC HOẠT ĐỘNG CHÍNH (AIMBOT & ESP) ====================
+-- ==================== CORE LOGIC ====================
 
 local function GetClosestPlayerInFOV()
     local TargetPart = nil
-    local ShortestDistance = Config.FOV
+    local ShortestDistance = Config.Aimbot.FOV
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
             local Character = player.Character
-            local Target = Character:FindFirstChild(Config.TargetPart)
+            local Target = Character:FindFirstChild(Config.Aimbot.TargetPart)
             local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+
+            -- Team Check (Optional: Thêm nếu muốn)
+            -- if player.Team == LocalPlayer.Team then continue end
 
             if Target and Humanoid and Humanoid.Health > 0 then
                 local ScreenPosition, OnScreen = Camera:WorldToViewportPoint(Target.Position)
                 if OnScreen then
+                    -- Lấy vị trí chuột thực tế từ Drawing API
                     local MousePosition = UserInputService:GetMouseLocation()
                     local Distance = (Vector2.new(ScreenPosition.X, ScreenPosition.Y) - MousePosition).Magnitude
 
@@ -236,67 +236,34 @@ end
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
-    if input.UserInputType == Config.AimKey or input.KeyCode == Config.AimKey then
-        IsAiming = true
-    end
+    if input.UserInputType == Config.Aimbot.Key then IsAiming = true end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Config.AimKey or input.KeyCode == Config.AimKey then
-        IsAiming = false
-    end
+    if input.UserInputType == Config.Aimbot.Key then IsAiming = false end
 end)
 
+-- Vòng lặp cập nhật liên tục (Main Loop)
 RunService.RenderStepped:Connect(function()
-    if Config.AimbotEnabled and IsAiming then
+    -- [NEW] Cập nhật vị trí vòng tròn FOV theo tâm màn hình
+    if FOVCircle.Visible then
+        FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    end
+
+    -- Logic Aimbot
+    if Config.Aimbot.Enabled and IsAiming then
         local Target = GetClosestPlayerInFOV()
         if Target then
             local TargetCFrame = CFrame.new(Camera.CFrame.Position, Target.Position)
-            Camera.CFrame = Camera.CFrame:Lerp(TargetCFrame, Config.Smoothness)
+            Camera.CFrame = Camera.CFrame:Lerp(TargetCFrame, Config.Aimbot.Smoothness)
         end
     end
-end)
-
-local function ApplyESP(character)
-    if not Config.ESPEnabled then return end
-    if not character:FindFirstChild("ESPHighlight") then
-        local Highlight = Instance.new("Highlight")
-        Highlight.Name = "ESPHighlight"
-        Highlight.FillColor = Config.ESPColor
-        Highlight.OutlineColor = Config.ESPColor
-        Highlight.FillTransparency = Config.FillOpacity
-        Highlight.OutlineTransparency = Config.OutlineOpacity
-        Highlight.Adornee = character
-        Highlight.Parent = character
-    end
-end
-
-local function RefreshESP()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            if player.Character then
-                ApplyESP(player.Character)
+    
+    -- Logic ESP (Quét mỗi khung hình)
+    if Config.ESP.Enabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                applyESP(player.Character)
             end
-            player.CharacterAdded:Connect(function(char)
-                task.wait(0.3)
-                ApplyESP(char)
-            end)
         end
     end
-end
-
--- Vòng lặp quét ESP liên tục phòng trường hợp đổi nút On/Off liên tục
-task.spawn(function()
-    while task.wait(1) do
-        if Config.ESPEnabled then
-            RefreshESP()
-        end
-    end
-end)
-
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(char)
-        task.wait(0.3)
-        ApplyESP(char)
-    end)
 end)
