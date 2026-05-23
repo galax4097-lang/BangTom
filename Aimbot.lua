@@ -1,335 +1,256 @@
--- [[ RIVALS PREMIUM BRAINROT HUB v2.1 ]]
+-- [[ RIVALS ULTRA HUB v1.2 - COPIED FROM TIKTOK ]]
+-- Thử nghiệm cấu trúc giao diện và logic ngắm bắn
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- ==================== HỆ THỐNG CẤU HÌNH (SETTINGS) ====================
+-- ==================== CẤU HÌNH BAN ĐẦU ====================
 local Config = {
     Aimbot = {
         Enabled = true,
-        Key = Enum.UserInputType.MouseButton2, -- Giữ chuột phải để aim
-        FOV = 200,                             -- Bán kính vòng tròn aim
-        Smoothness = 0.12,                     -- Độ mượt (số càng nhỏ càng mượt)
-        TargetPart = "Head"                    -- Bộ phận nhắm (Head hoặc HumanoidRootPart)
+        Key = Enum.UserInputType.MouseButton2, -- Giữ chuột phải
+        FOV = 250,                             -- Kích thước vòng tròn trong ảnh
+        Smoothness = 0.1,                     -- Độ mượt khóa mục tiêu
+        TargetPart = "Head"
     },
     ESP = {
-        Enabled = true,        -- Bật/tắt phát sáng (Chams)
-        Names = true,          -- Bật/tắt hiện tên
-        Distance = true,       -- Bật/tắt hiện khoảng cách
-        Health = true,         -- Bật/tắt hiện thanh máu
-        Color = Color3.fromRGB(255, 0, 100) -- Màu hồng neon giống ảnh mẫu
+        Enabled = true,
+        Color = Color3.fromRGB(255, 0, 50)     -- Màu đỏ neon phát sáng giống video
     }
 }
 
 local IsAiming = false
 local MenuVisible = true
-local IsMinimized = false
-local TabFrames = {}
 
--- Tạo vòng tròn hiển thị vùng FOV bằng Drawing API
+-- ==================== [1] TẠO VÒNG TRÒN FOV GIỐNG VIDEO ====================
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = Config.Aimbot.Enabled
 FOVCircle.Filled = false
-FOVCircle.Thickness = 1.5
-FOVCircle.Color = Color3.fromRGB(255, 255, 255)
-FOVCircle.NumSides = 100
+FOVCircle.Thickness = 1.5 -- Viền mảnh chuẩn nét
+FOVCircle.Color = Color3.fromRGB(255, 255, 255) -- Màu trắng tinh
+FOVCircle.NumSides = 100 -- Độ bo tròn tối đa không bị răng cưa
 FOVCircle.Radius = Config.Aimbot.FOV
+FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
--- ==================== THIẾT KẾ GIAO DIỆN MENU GUI CHUẨN ẢNH ====================
+-- ==================== [2] HỆ THỐNG MENU GUI BẬT TẮT ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BrainrotHubPremium"
+ScreenGui.Name = "RivalsPremiumMenu"
 ScreenGui.ResetOnSpawn = false
+-- Cố gắng đưa vào CoreGui để không bị lỗi đè màn hình
 pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
--- Khung nền Menu chính
+-- Khung Menu chính (Dark Mode)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 520, 0, 340)
-MainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+MainFrame.Size = UDim2.new(0, 260, 0, 280)
+MainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
-MainFrame.Draggable = true -- Giữ chuột vào thanh tiêu đề để di chuyển bảng công cụ
+MainFrame.Draggable = true -- Cho phép nắm tiêu đề kéo đi quanh màn hình
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 9)
+MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
--- Thiết lập viền phát sáng màu Hồng/Tím Neon bao quanh Menu
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(230, 30, 110)
-UIStroke.Thickness = 1.5
-UIStroke.Parent = MainFrame
-
--- Thanh tiêu đề trên cùng (TopBar)
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 40)
-TopBar.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-TopBar.BorderSizePixel = 0
-TopBar.Parent = MainFrame
-
-local TopCorner = Instance.new("UICorner")
-TopCorner.CornerRadius = UDim.new(0, 9)
-TopCorner.Parent = TopBar
-
+-- Thanh Tiêu Đề
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0.7, 0, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "Brainrot Hub — Rivals Edition"
-Title.TextColor3 = Color3.fromRGB(230, 230, 235)
+Title.Size = UDim2.new(1, 0, 0, 45)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+Title.Text = "  RIVALS V.I.P MENU"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 15
+Title.TextSize = 16
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
+Title.Parent = MainFrame
 
--- NÚT THU NHỎ / PHÓNG TO MENU (MINIMIZE BUTTON)
-local MinimizeBtn = Instance.new("TextButton")
-MinimizeBtn.Size = UDim2.new(0, 35, 0, 35)
-MinimizeBtn.Position = UDim2.new(1, -45, 0, 2)
-MinimizeBtn.BackgroundTransparency = 1
-MinimizeBtn.Text = "[-]"
-MinimizeBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-MinimizeBtn.Font = Enum.Font.SourceSansBold
-MinimizeBtn.TextSize = 18
-MinimizeBtn.Parent = TopBar
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.Parent = Title
 
--- Sidebar phân mục bên trái
-local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 140, 1, -40)
-Sidebar.Position = UDim2.new(0, 0, 0, 40)
-Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-Sidebar.BorderSizePixel = 0
-Sidebar.Parent = MainFrame
+-- Hàm tiện ích tạo Nút Bật/Tắt nhanh
+local function AddToggle(text, pos, default, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(0, 220, 0, 35)
+    Button.Position = pos
+    Button.Font = Enum.Font.SourceSansSemibold
+    Button.TextSize = 14
+    Button.BorderSizePixel = 0
+    Button.Parent = MainFrame
+    
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 6)
+    Corner.Parent = Button
+    
+    local state = default
+    local function setVisual(s)
+        if s then
+            Button.BackgroundColor3 = Color3.fromRGB(46, 204, 113) -- Xanh lá
+            Button.Text = text .. ": BẬT"
+            Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            Button.BackgroundColor3 = Color3.fromRGB(231, 76, 60) -- Đỏ
+            Button.Text = text .. ": TẮT"
+            Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end
+    end
+    setVisual(state)
+    
+    Button.MouseButton1Click:Connect(function()
+        state = not state
+        setVisual(state)
+        callback(state)
+    end)
+end
 
--- Cửa sổ chứa nội dung bên phải
-local Container = Instance.new("Frame")
-Container.Size = UDim2.new(1, -150, 1, -50)
-Container.Position = UDim2.new(0, 145, 0, 45)
-Container.BackgroundTransparency = 1
-Container.Parent = MainFrame
+-- Hàm tiện ích tạo Ô Nhập Thông Số
+local function AddTextBox(text, pos, default, callback)
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(0, 120, 0, 35)
+    Label.Position = pos
+    Label.BackgroundTransparency = 1
+    Label.Text = text
+    Label.TextColor3 = Color3.fromRGB(180, 180, 180)
+    Label.Font = Enum.Font.SourceSans
+    Label.TextSize = 14
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = MainFrame
+    
+    local Box = Instance.new("TextBox")
+    Box.Size = UDim2.new(0, 80, 0, 28)
+    Box.Position = pos + UDim2.new(0, 140, 0, 3)
+    Box.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    Box.Text = tostring(default)
+    Box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Box.Font = Enum.Font.SourceSansBold
+    Box.TextSize = 14
+    Box.BorderSizePixel = 0
+    Box.Parent = MainFrame
+    
+    local BoxCorner = Instance.new("UICorner")
+    BoxCorner.CornerRadius = UDim.new(0, 4)
+    BoxCorner.Parent = Box
+    
+    Box.FocusLost:Connect(function()
+        local num = tonumber(Box.Text)
+        if num then callback(num) else Box.Text = tostring(default) end
+    end)
+end
 
--- Xử lý chức năng Thu nhỏ / Phóng to Menu khi bấm nút
-MinimizeBtn.MouseButton1Click:Connect(function()
-    IsMinimized = not IsMinimized
-    if IsMinimized then
-        Sidebar.Visible = false
-        Container.Visible = false
-        MainFrame.Size = UDim2.new(0, 520, 0, 40) -- Co lại thành một thanh tiêu đề nhỏ gọn
-        MinimizeBtn.Text = "[+]"
-    else
-        MainFrame.Size = UDim2.new(0, 520, 0, 340) -- Giãn nở về kích thước đầy đủ ban đầu
-        Sidebar.Visible = true
-        Container.Visible = true
-        MinimizeBtn.Text = "[-]"
+-- Khởi tạo các phần tử điều khiển lên Menu
+AddToggle("Chế độ Ngắm (Aimbot)", UDim2.new(0, 20, 0, 60), Config.Aimbot.Enabled, function(state)
+    Config.Aimbot.Enabled = state
+    FOVCircle.Visible = state
+end)
+
+AddToggle("Phát sáng nhân vật (ESP)", UDim2.new(0, 20, 0, 105), Config.ESP.Enabled, function(state)
+    Config.ESP.Enabled = state
+    if not state then
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Highlight") and v.Name == "RivalsESP" then v:Destroy() end
+        end
     end
 end)
 
--- Nhấn phím để ẩn hoặc hiện toàn bộ hack (RightControl / Insert)
+AddTextBox("Kích thước Vòng FOV", UDim2.new(0, 20, 0, 155), Config.Aimbot.FOV, function(val)
+    Config.Aimbot.FOV = val
+    FOVCircle.Radius = val
+end)
+
+AddTextBox("Độ mượt (Smooth)", UDim2.new(0, 20, 0, 200), Config.Aimbot.Smoothness, function(val)
+    Config.Aimbot.Smoothness = val
+end)
+
+-- Phím tắt Ẩn / Hiện Menu nhanh
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightControl or input.KeyCode == Enum.KeyCode.Insert then
         MenuVisible = not MenuVisible
         MainFrame.Visible = MenuVisible
-        if not MenuVisible then FOVCircle.Visible = false else FOVCircle.Visible = Config.Aimbot.Enabled end
     end
 end)
 
--- ==================== CÁC HÀM TIỆN ÍCH DỰNG GIAO DIỆN (UI BUILDER) ====================
-local function CreateTab(tabName, order)
-    local TabBtn = Instance.new("TextButton")
-    TabBtn.Size = UDim2.new(0, 120, 0, 35)
-    TabBtn.Position = UDim2.new(0, 10, 0, 10 + (order * 40))
-    TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
-    TabBtn.Text = tabName
-    TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabBtn.Font = Enum.Font.SourceSansSemibold
-    TabBtn.TextSize = 14
-    TabBtn.Parent = Sidebar
-    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
 
-    local TabFrame = Instance.new("ScrollingFrame")
-    TabFrame.Size = UDim2.new(1, 0, 1, 0)
-    TabFrame.BackgroundTransparency = 1
-    TabFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
-    TabFrame.ScrollBarThickness = 3
-    TabFrame.Visible = (order == 0)
-    TabFrame.Parent = Container
+-- ==================== [3] LOGIC ESP PHÁT SÁNG NGƯỜI CHƠI ====================
+local function ApplyHighlight(character)
+    if not Config.ESP.Enabled then return end
+    if character == LocalPlayer.Character then return end
     
-    local UIList = Instance.new("UIListLayout")
-    UIList.Padding = UDim.new(0, 8)
-    UIList.Parent = TabFrame
-
-    TabFrames[tabName] = TabFrame
-
-    TabBtn.MouseButton1Click:Connect(function()
-        for k, v in pairs(TabFrames) do v.Visible = (k == tabName) end
-    end)
-    return TabFrame
-end
-
-local function AddToggle(tabFrame, text, default, callback)
-    local Row = Instance.new("Frame")
-    Row.Size = UDim2.new(1, -10, 0, 40)
-    Row.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-    Row.BorderSizePixel = 0
-    Row.Parent = tabFrame
-    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 6)
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.7, 0, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(210, 210, 215)
-    Label.Font = Enum.Font.SourceSans
-    Label.TextSize = 14
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Row
-
-    local Switch = Instance.new("TextButton")
-    Switch.Size = UDim2.new(0, 45, 0, 22)
-    Switch.Position = UDim2.new(1, -55, 0, 9)
-    Switch.Text = ""
-    Switch.Parent = Row
-    Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
-
-    local State = default
-    local function updateVisual()
-        Switch.BackgroundColor3 = State and Color3.fromRGB(230, 30, 110) or Color3.fromRGB(60, 60, 65)
+    local highlight = character:FindFirstChild("RivalsESP")
+    if not highlight then
+        highlight = Instance.new("Highlight")
+        highlight.Name = "RivalsESP"
+        highlight.FillColor = Config.ESP.Color
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- Viền trắng giống ảnh
+        highlight.FillTransparency = 0.4
+        highlight.OutlineTransparency = 0.1
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Thấy xuyên tường
+        highlight.Parent = character
     end
-    updateVisual()
-
-    Switch.MouseButton1Click:Connect(function()
-        State = not State
-        updateVisual()
-        callback(State)
-    end)
 end
 
-local function AddSlider(tabFrame, text, min, max, default, callback)
-    local Row = Instance.new("Frame")
-    Row.Size = UDim2.new(1, -10, 0, 50)
-    Row.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-    Row.BorderSizePixel = 0
-    Row.Parent = tabFrame
-    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 6)
+-- ==================== [4] LOGIC TÌM ĐỊCH TRONG VÒNG TRÒN FOV ====================
+local function GetClosestTarget()
+    local CurrentTarget = nil
+    local MaxDistance = Config.Aimbot.FOV
 
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.6, 0, 0, 25)
-    Label.Position = UDim2.new(0, 10, 0, 2)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(210, 210, 215)
-    Label.Font = Enum.Font.SourceSans
-    Label.TextSize = 14
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Row
-
-    local ValueLabel = Instance.new("TextLabel")
-    ValueLabel.Size = UDim2.new(0.3, 0, 0, 25)
-    ValueLabel.Position = UDim2.new(0.7, -10, 0, 2)
-    ValueLabel.BackgroundTransparency = 1
-    ValueLabel.Text = tostring(default)
-    ValueLabel.TextColor3 = Color3.fromRGB(230, 30, 110)
-    ValueLabel.Font = Enum.Font.SourceSansBold
-    ValueLabel.TextSize = 14
-    ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
-    ValueLabel.Parent = Row
-
-    local SliderBar = Instance.new("TextButton")
-    SliderBar.Size = UDim2.new(1, -20, 0, 5)
-    SliderBar.Position = UDim2.new(0, 10, 0, 32)
-    SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-    SliderBar.Text = ""
-    SliderBar.Parent = Row
-
-    local Fill = Instance.new("Frame")
-    Fill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
-    Fill.BackgroundColor3 = Color3.fromRGB(230, 30, 110)
-    Fill.BorderSizePixel = 0
-    Fill.Parent = SliderBar
-
-    local function updateSlider(input)
-        local totalWidth = SliderBar.AbsoluteSize.X
-        local relX = math.clamp(input.Position.X - SliderBar.AbsolutePosition.X, 0, totalWidth)
-        local percentage = relX / totalWidth
-        local value = math.floor(min + (max - min) * percentage)
-        ValueLabel.Text = tostring(value)
-        Fill.Size = UDim2.new(percentage, 0, 1, 0)
-        callback(value)
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local char = player.Character
+            local head = char:FindFirstChild(Config.Aimbot.TargetPart)
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            
+            if head and hum and hum.Health > 0 then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                    
+                    if distance < MaxDistance then
+                        MaxDistance = distance
+                        CurrentTarget = head
+                    end
+                end
+            end
+        end
     end
-
-    local sliding = false
-    SliderBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = true updateSlider(input) end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if sliding and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end
-    end)
+    return CurrentTarget
 end
 
--- KHỞI TẠO CÁC MỤC TAB TRÊN SIDEBAR TRÁI
-local CombatTab = CreateTab("Ngắm Bắn (Main)", 0)
-local ESPTab = CreateTab("Hiển Thị (ESP)", 1)
+-- Nhận diện hành động nhấn chuột ngắm bắn
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.UserInputType == Config.Aimbot.Key then IsAiming = true end
+end)
 
--- Thêm tùy chọn điều chỉnh vào tab Combat
-AddToggle(CombatTab, "Bật Tự Động Ngắm (Aimbot)", Config.Aimbot.Enabled, function(s) Config.Aimbot.Enabled = s FOVCircle.Visible = s end)
-AddSlider(CombatTab, "Kích Thước Vòng Tròn FOV", 50, 500, Config.Aimbot.FOV, function(v) Config.Aimbot.FOV = v FOVCircle.Radius = v end)
-AddSlider(CombatTab, "Độ Mượt Nhắm (Smooth %)", 1, 30, 12, function(v) Config.Aimbot.Smoothness = v / 100 end)
-
--- Thêm tùy chọn điều chỉnh vào tab ESP (Đã sửa lỗi đồng bộ biến)
-AddToggle(ESPTab, "Bật Phát Sáng Người (Chams)", Config.ESP.Enabled, function(s) Config.ESP.Enabled = s if not s then for _, v in ipairs(workspace:GetDescendants()) do if v:IsA("Highlight") and v.Name == "BrainrotESP" then v:Destroy() end end end end)
-AddToggle(ESPTab, "Hiển Thị Tên Nhân Vật", Config.ESP.Names, function(s) Config.ESP.Names = s end)
-AddToggle(ESPTab, "Hiển Thị Khoảng Cách", Config.ESP.Distance, function(s) Config.ESP.Distance = s end)
-AddToggle(ESPTab, "Hiển Thị Chỉ Số Máu", Config.ESP.Health, function(s) Config.ESP.Health = s end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Config.Aimbot.Key then IsAiming = false end
+end)
 
 
--- ==================== HỆ THỐNG ESP TEXT CHUYÊN NGHIỆP (TÊN, KHOẢNG CÁCH, MÁU) ====================
-local function ManageTextESP(player)
-    if player == LocalPlayer then return end
+-- ==================== [5] VÒNG LẶP HỆ THỐNG (RENDER STEPPED) ====================
+RunService.RenderStepped:Connect(function()
+    -- Luôn giữ vòng tròn FOV ở giữa màn hình của bạn
+    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     
-    local function createGui(char)
-        local head = char:WaitForChild("Head", 5)
-        local hum = char:WaitForChild("Humanoid", 5)
-        if not head or not hum then return end
-
-        local bbg = head:FindFirstChild("RivalsESP_Text") or Instance.new("BillboardGui")
-        bbg.Name = "RivalsESP_Text"
-        bbg.Size = UDim2.new(0, 200, 0, 60)
-        bbg.StudsOffset = Vector3.new(0, 3, 0) -- Vị trí hiển thị cao hơn đầu nhân vật một chút
-        bbg.AlwaysOnTop = true
-        bbg.Parent = head
-
-        local ContainerList = bbg:FindFirstChild("Container") or Instance.new("Frame")
-        ContainerList.Name = "Container"
-        ContainerList.Size = UDim2.new(1, 0, 1, 0)
-        ContainerList.BackgroundTransparency = 1
-        ContainerList.Parent = bbg
-
-        local layout = ContainerList:FindFirstChild("Layout") or Instance.new("UIListLayout")
-        layout.Name = "Layout"
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        layout.Parent = ContainerList
-
-        local NameTag = ContainerList:FindFirstChild("NameTag") or Instance.new("TextLabel")
-        NameTag.Name = "NameTag"
-        NameTag.Size = UDim2.new(1, 0, 0, 16)
-        NameTag.BackgroundTransparency = 1
-        NameTag.TextColor3 = Color3.fromRGB(255, 255, 255)
-        NameTag.Font = Enum.Font.SourceSansBold
-        NameTag.TextSize = 14
-        NameTag.Parent = ContainerList
-
-        local InfoTag = ContainerList:FindFirstChild("InfoTag") or Instance.new("TextLabel")
-        InfoTag.Name = "InfoTag"
-        InfoTag.Size = UDim2.new(1, 0, 0, 16)
-        InfoTag.BackgroundTransparency = 1
-        InfoTag.TextColor3 = Color3.fromRGB(0, 255, 150) -- Màu xanh dạ quang làm nổi bật thông số giống các bản hack cao cấp
-        InfoTag.Font = Enum.Font.SourceSans
-        InfoTag.TextSize =
+    -- Xử lý khóa mục tiêu tự động
+    if Config.Aimbot.Enabled and IsAiming then
+        local target = GetClosestTarget()
+        if target then
+            local targetCFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+            Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, Config.Aimbot.Smoothness)
+        end
+    end
+    
+    -- Xử lý quét đồ họa phát sáng nhân vật
+    if Config.ESP.Enabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                ApplyHighlight(player.Character)
+            end
+        end
+    end
+end)
