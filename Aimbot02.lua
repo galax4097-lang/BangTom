@@ -1,26 +1,27 @@
--- [[ RIVALS PREMIUM BRAINROT HUB v2.5 - FINAL OPTIMIZED ]]
+-- [[ RIVALS PREMIUM BRAINROT HUB v2.6 - ANTI-SHAKE & HARD LOCK ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- ==================== CẤU HÌNH HỆ THỐNG ====================
+-- ==================== HỆ THỐNG CẤU HÌNH (SETTINGS) ====================
 local Config = {
     Aimbot = {
         Enabled = true,
-        Key = Enum.UserInputType.MouseButton2, 
+        HardLock = true,                      -- BẬT MẶC ĐỊNH: Ghim cứng dính chặt không rung
+        Key = Enum.UserInputType.MouseButton2, -- Giữ chuột phải để aim
         FOV = 200,                             
-        Smoothness = 0.12,                     
-        TargetPart = "Head",                  -- "Head" hoặc "HumanoidRootPart"
-        TeamCheck = false                     -- Bật/Tắt nhắm vào đồng đội
+        Smoothness = 0.15,                     -- Độ mượt khi TẮT Ghim Cứng
+        TargetPart = "Head",                  
+        TeamCheck = false                     
     },
     ESP = {
         Enabled = true,        
         Names = true,          
         Distance = true,       
         Health = true,         
-        TeamCheck = false,                    -- Tắt phát sáng đồng đội
+        TeamCheck = false,                    
         Color = Color3.fromRGB(255, 0, 100) 
     }
 }
@@ -41,7 +42,7 @@ FOVCircle.Radius = Config.Aimbot.FOV
 
 -- ==================== TẠO GIAO DIỆN MENU BÊN TRÁI ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BrainrotHubFinal"
+ScreenGui.Name = "BrainrotHubAntiShake"
 ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
@@ -60,7 +61,7 @@ MainCorner.CornerRadius = UDim.new(0, 9)
 MainCorner.Parent = MainFrame
 
 local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(230, 30, 110) -- Viền hồng neon
+UIStroke.Color = Color3.fromRGB(230, 30, 110) 
 UIStroke.Thickness = 1.5
 UIStroke.Parent = MainFrame
 
@@ -79,7 +80,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0.7, 0, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Brainrot Hub — Rivals Premium"
+Title.Text = "Brainrot Hub — Anti-Shake & Hard Lock"
 Title.TextColor3 = Color3.fromRGB(230, 230, 235)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 15
@@ -279,31 +280,30 @@ local ESPTab = CreateTab("Hiển Thị (ESP)", 1)
 
 -- Cài đặt mục Combat
 AddToggle(CombatTab, "Bật Tự Động Ngắm (Aimbot)", Config.Aimbot.Enabled, function(s) Config.Aimbot.Enabled = s FOVCircle.Visible = s end)
+AddToggle(CombatTab, "CHẾ ĐỘ GHIM CỨNG (KHÔNG RUNG)", Config.Aimbot.HardLock, function(s) Config.Aimbot.HardLock = s end)
 AddToggle(CombatTab, "Né Đồng Đội (Team Check)", Config.Aimbot.TeamCheck, function(s) Config.Aimbot.TeamCheck = s end)
-AddToggle(CombatTab, "Nhắm vào Người thay vì Đầu", false, function(s) Config.Aimbot.TargetPart = s and "HumanoidRootPart" or "Head" end)
 AddSlider(CombatTab, "Kích Thước Vòng Tròn FOV", 50, 500, Config.Aimbot.FOV, function(v) Config.Aimbot.FOV = v FOVCircle.Radius = v end)
-AddSlider(CombatTab, "Độ Mượt Nhắm (Smooth %)", 1, 30, 12, function(v) Config.Aimbot.Smoothness = v / 100 end)
+AddSlider(CombatTab, "Độ Mượt Chế Độ Thường (%)", 1, 30, 15, function(v) Config.Aimbot.Smoothness = v / 100 end)
 
--- Cài đặt mục ESP (ĐÃ SỬA LỖI ĐỒNG BỘ BIẾN SANG THÀNH ESPTAB)
+-- Cài đặt mục ESP
 AddToggle(ESPTab, "Bật Phát Sáng Người (Chams)", Config.ESP.Enabled, function(s) Config.ESP.Enabled = s if not s then for _, v in ipairs(workspace:GetDescendants()) do if v:IsA("Highlight") and v.Name == "BrainrotESP" then v:Destroy() end end end end)
 AddToggle(ESPTab, "Không Hiện Đồng Đội (Team Check)", Config.ESP.TeamCheck, function(s) Config.ESP.TeamCheck = s if s then for _, v in ipairs(workspace:GetDescendants()) do if v:IsA("Highlight") and v.Name == "BrainrotESP" then v:Destroy() end end end end)
 AddToggle(ESPTab, "Hiển Thị Tên Nhân Vật", Config.ESP.Names, function(s) Config.ESP.Names = s end)
 AddToggle(ESPTab, "Hiển Thị Khoảng Cách", Config.ESP.Distance, function(s) Config.ESP.Distance = s end)
 AddToggle(ESPTab, "Hiển Thị Chỉ Số Máu", Config.ESP.Health, function(s) Config.ESP.Health = s end)
 
--- ==================== HIỆU ỨNG CHỮ HOÀN THÀNH "ELIMINATED" GIỐNG TRÊN VIDEO TIKTOK ====================
+-- ==================== HIỆU ỨNG THÔNG BÁO "ELIMINATED" ====================
 local function ShowEliminatedKillfeed(victimName)
     local KillNotification = Instance.new("TextLabel")
     KillNotification.Size = UDim2.new(0, 400, 0, 40)
-    KillNotification.Position = UDim2.new(0.5, -200, 0.6, 0) -- Nằm ngay dưới tâm ngắm một chút giống video
+    KillNotification.Position = UDim2.new(0.5, -200, 0.6, 0) 
     KillNotification.BackgroundTransparency = 1
     KillNotification.Text = "Eliminated " .. victimName
-    KillNotification.TextColor3 = Color3.fromRGB(255, 200, 0) -- Màu vàng cam rực rỡ
+    KillNotification.TextColor3 = Color3.fromRGB(255, 200, 0) 
     KillNotification.Font = Enum.Font.SourceSansBold
     KillNotification.TextSize = 28
     KillNotification.Parent = ScreenGui
     
-    -- Hiệu ứng mờ dần rồi biến mất trong 2 giây
     task.wait(1.5)
     for i = 0, 1, 0.1 do
         KillNotification.TextTransparency = i
@@ -312,7 +312,7 @@ local function ShowEliminatedKillfeed(victimName)
     KillNotification:Destroy()
 end
 
--- ==================== HỆ THỐNG ESP CHỮ (NAME, DIST, HEALTH) ====================
+-- ==================== HỆ THỐNG ESP TEXT CHỮ ====================
 local function ManageTextESP(player)
     if player == LocalPlayer then return end
     
@@ -321,9 +321,7 @@ local function ManageTextESP(player)
         local hum = char:WaitForChild("Humanoid", 5)
         if not head or not hum then return end
 
-        -- Lắng nghe sự kiện đối thủ chết để kích hoạt hiệu ứng Eliminated như trên video
         hum.Died:Connect(function()
-            -- Chỉ hiện thông báo nếu đối thủ ở gần vòng ngắm của bạn
             local _, onScreen = Camera:WorldToViewportPoint(head.Position)
             if onScreen then
                 ShowEliminatedKillfeed(player.Name)
@@ -374,7 +372,6 @@ local function ManageTextESP(player)
                 return
             end
 
-            -- Nếu bật Team Check cho ESP, ẩn chữ của đồng đội đi
             if Config.ESP.TeamCheck and player.Team == LocalPlayer.Team then
                 NameTag.Visible = false
                 InfoTag.Visible = false
@@ -398,14 +395,13 @@ local function ManageTextESP(player)
     player.CharacterAdded:Connect(createGui)
 end
 
--- ==================== CORE FUNCTION: AIMBOT LOGIC NÂNG CAO ====================
+-- ==================== CORE FUNCTION: AIMBOT LOGIC KHẮC PHỤC RUNG ====================
 local function GetClosestPlayer()
     local Target = nil
     local MaxDist = Config.Aimbot.FOV
 
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
-            -- Tính năng Team Check (Nếu bật sẽ bỏ qua người cùng đội)
             if Config.Aimbot.TeamCheck and p.Team == LocalPlayer.Team then continue end
 
             local head = p.Character:FindFirstChild(Config.Aimbot.TargetPart)
@@ -436,11 +432,23 @@ Players.PlayerAdded:Connect(ManageTextESP)
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-    -- Thực thi khóa tâm ngắm Aimbot mượt mà
+    -- Thực thi khóa tâm ngắm Aimbot không rung
     if Config.Aimbot.Enabled and IsAiming then
         local t = GetClosestPlayer()
         if t then
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, t.Position), Config.Aimbot.Smoothness)
+            if Config.Aimbot.HardLock then
+                -- THUẬT TOÁN CHỐNG RUNG CHUYÊN NGHIỆP: Khóa theo tọa độ tĩnh của Thân (RootPart) + cao lên 1.5 stud
+                local rootPart = t.Parent:FindFirstChild("HumanoidRootPart")
+                if rootPart then
+                    local stableTargetPos = rootPart.Position + Vector3.new(0, 1.5, 0) -- Vị trí Đầu cố định, bỏ qua animation lắc lư
+                    Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, stableTargetPos)
+                else
+                    Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, t.Position)
+                end
+            else
+                -- Chế độ mượt thông thường (Có thể hơi rung nhẹ nếu kẻ địch chạy nhanh)
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, t.Position), Config.Aimbot.Smoothness)
+            end
         end
     end
 
@@ -448,7 +456,6 @@ RunService.RenderStepped:Connect(function()
     if Config.ESP.Enabled then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                -- Nếu bật lọc đồng đội, xóa phát sáng của người cùng đội
                 if Config.ESP.TeamCheck and p.Team == LocalPlayer.Team then
                     local oldHl = p.Character:FindFirstChild("BrainrotESP")
                     if oldHl then oldHl:Destroy() end
