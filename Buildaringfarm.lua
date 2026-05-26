@@ -1,82 +1,128 @@
--- ====================================================================
--- BUILD A RING FARM - UNIVERSAL AUTO FARM RING
--- Hỗ trợ các Executor hiện nay (Solara, Wave, Celery, Macsploit...)
--- ====================================================================
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-if not game:IsLoaded() then 
-    game.Loaded:Wait() 
-end
+local Window = Rayfield:CreateWindow({
+   Name = "Build A Ring Farm [Custom Version]",
+   LoadingTitle = "Đang tải Menu...",
+   LoadingSubtitle = "by Gemini",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "GeminiHubConfigs",
+      FileName = "CustomFarm"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "",
+      RememberJoins = true
+   },
+   KeySystem = false -- Tắt hệ thống key cho tiện sử dụng [NO KEY]
+})
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
+---------------------------------------------------------------------------
+-- TẠO CÁC DANH MỤC (TABS) BÊN TRÁI GIỐNG TRONG ẢNH
+---------------------------------------------------------------------------
+local FarmTab = Window:CreateTab("🌾 Farming", 4483362458) -- Mục Auto Farm
+local UpgradeTab = Window:CreateTab("⚡ Upgrades", 4483362458) -- Mục Nâng cấp
+local UtilityTab = Window:CreateTab("🛠️ Utilities", 4483362458) -- Mục Tiện ích
 
--- Cấu hình tùy chỉnh nâng cao
-_G.AutoFarmRings = true
-_G.DelayBetweenRings = 0.3 -- Thời gian chờ giữa mỗi vòng (giây). Có thể tăng lên nếu bị kick.
+---------------------------------------------------------------------------
+-- CHỨC NĂNG TRONG MỤC: FARMING
+---------------------------------------------------------------------------
+FarmTab:CreateSection("AUTO FARMING")
 
--- Hàm thực hiện Auto Farm
-local function startRingFarm()
-    while _G.AutoFarmRings do
-        -- Tự động quét các tên thư mục phổ biến chứa Vòng trong Workspace
-        local ringFolder = Workspace:FindFirstChild("Rings") 
-            or Workspace:FindFirstChild("Stages") 
-            or Workspace:FindFirstChild("RingFolder")
-            or Workspace:FindFirstChild("AllRings")
+local AutoFarmToggle = FarmTab:CreateToggle({
+   Name = "Auto Thu Hoạch / Auto Farm",
+   CurrentValue = false,
+   Flag = "ToggleAutoFarm",
+   Callback = function(Value)
+      _G.AutoFarm = Value
+      while _G.AutoFarm do
+         task.wait(0.5)
+         -- Bạn chèn Code thực hiện hành động Farm ở đây
+         -- Ví dụ: game:GetService("ReplicatedStorage").Remotes.Farm:FireServer()
+         print("Đang tự động farm...")
+      end
+   end,
+})
 
-        if ringFolder then
-            local rings = ringFolder:GetChildren()
-            
-            -- Sắp xếp thứ tự các vòng từ 1 đến vòng cuối cùng (nếu tên vòng là số)
-            table.sort(rings, function(a, b)
-                local numA = tonumber(a.Name:match("%d+")) or 0
-                local numB = tonumber(b.Name:match("%d+")) or 0
-                return numA < numB
-            end)
+local AutoSellToggle = FarmTab:CreateToggle({
+   Name = "Auto Bán Vật Phẩm (Auto Sell)",
+   CurrentValue = false,
+   Flag = "ToggleAutoSell",
+   Callback = function(Value)
+      _G.AutoSell = Value
+      while _G.AutoSell do
+         task.wait(1)
+         -- Chèn Code tự động bán ở đây
+         print("Đang tự động bán...")
+      end
+   end,
+})
 
-            -- Vòng lặp đi qua từng vòng một
-            for _, ring in ipairs(rings) do
-                if not _G.AutoFarmRings then break end
-                
-                -- Xác định Part cần chạm
-                local touchPart = ring:IsA("BasePart") and ring or ring:FindFirstChildWhichIsA("BasePart")
-                
-                if touchPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    local hrp = LocalPlayer.Character.HumanoidRootPart
-                    
-                    -- MẸO: Sử dụng firetouchinterest để kích hoạt va chạm từ xa mà không cần dịch chuyển
-                    if firetouchinterest then
-                        firetouchinterest(hrp, touchPart, 0) -- Bắt đầu chạm
-                        task.wait(0.02)
-                        firetouchinterest(hrp, touchPart, 1) -- Thả chạm out
-                    else
-                        -- Phương án dự phòng nếu Executor cùi không hỗ trợ firetouchinterest
-                        hrp.CFrame = touchPart.CFrame + Vector3.new(0, 2, 0)
-                    end
-                    
-                    task.wait(_G.DelayBetweenRings)
-                end
-            end
-            
-            -- Sau khi đi hết các vòng, đợi nhân vật hồi sinh hoặc reset để nhận phần thưởng lượt mới
-            task.wait(1)
-        else
-            -- Nếu game giấu thư mục vòng quá kỹ, script sẽ tự động tìm bất kỳ Part nào có tên chứa chữ "Ring"
-            for _, obj in ipairs(Workspace:GetDescendants()) do
-                if _G.AutoFarmRings and obj:IsA("BasePart") and (obj.Name:lower():find("ring") or obj.Name:lower():find("stage")) then
-                    if firetouchinterest and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, obj, 0)
-                        task.wait(0.01)
-                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, obj, 1)
-                    end
-                    task.wait(0.1)
-                end
-            end
-            task.wait(2)
-        end
-    end
-end
+FarmTab:CreateSection("SEED MANAGEMENT")
 
--- Thông báo kích hoạt thành công trên thanh F9 Console
-print("[Dragon Hub]: Auto Ring Farm đã được kích hoạt thành công!")
-task.spawn(startRingFarm)
+local SeedDropdown = FarmTab:CreateDropdown({
+   Name = "Chọn Loại Hạt Giống",
+   Options = {"None", "Hành Hành", "Hạt Giống Void", "Papaya Seed"},
+   CurrentOption = {"None"},
+   MultipleOptions = false,
+   Flag = "DropdownSeeds",
+   Callback = function(Option)
+      print("Đã chọn hạt giống: " .. Option[1])
+   end,
+})
+
+---------------------------------------------------------------------------
+-- CHỨC NĂNG TRONG MỤC: UPGRADES
+---------------------------------------------------------------------------
+UpgradeTab:CreateSection("TỰ ĐỘNG NÂNG CẤP")
+
+local AutoUpgradeToggle = UpgradeTab:CreateToggle({
+   Name = "Auto Nâng Cấp Tốc Độ",
+   CurrentValue = false,
+   Flag = "ToggleUpgradeSpeed",
+   Callback = function(Value)
+      _G.AutoUpgrade = Value
+      while _G.AutoUpgrade do
+         task.wait(2)
+         print("Đang kiểm tra nâng cấp...")
+      end
+   end,
+})
+
+---------------------------------------------------------------------------
+-- CHỨC NĂNG TRONG MỤC: UTILITIES (Tính năng người chơi)
+---------------------------------------------------------------------------
+UtilityTab:CreateSection("TÍNH NĂNG NGƯỜI CHƠI")
+
+local SpeedSlider = UtilityTab:CreateSlider({
+   Name = "Tốc độ chạy (Walkspeed)",
+   Min = 16,
+   Max = 150,
+   DefaultValue = 16,
+   Color = Color3.fromRGB(255, 255, 255),
+   Increment = 1,
+   ValueName = "Speed",
+   Callback = function(Value)
+      game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+   end,
+})
+
+local JumpSlider = UtilityTab:CreateSlider({
+   Name = "Sức nhảy (JumpPower)",
+   Min = 50,
+   Max = 300,
+   DefaultValue = 50,
+   Color = Color3.fromRGB(255, 255, 255),
+   Increment = 1,
+   ValueName = "Power",
+   Callback = function(Value)
+      game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+   end,
+})
+
+Rayfield:Notify({
+   Title = "Thành Công!",
+   Content = "Menu đã được kích hoạt thành công.",
+   Duration = 5,
+   Image = 4483362458,
+})
