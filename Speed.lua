@@ -1,128 +1,196 @@
+-- [[ TWEEN TP GUI HUB ]] --
 local Players = game:GetService("Players")
-local CoreGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or Players.LocalPlayer:WaitForChild("PlayerGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
 
-local player = Players.LocalPlayer
-local speedConnection -- Biến lưu trữ kết nối để ngắt khi tắt
+-- Tạo GUI (Tự động nhận diện CoreGui hoặc PlayerGui)
+local ScreenGui = Instance.new("ScreenGui")
+pcall(function()
+    ScreenGui.Parent = game:GetService("CoreGui")
+end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+ScreenGui.Name = "TweenTP_Hub"
+ScreenGui.ResetOnSpawn = false
 
--- ==========================================
--- 1. XÓA BẢNG CŨ NẾU CÓ
--- ==========================================
-if CoreGui:FindFirstChild("OptimizedSpeedHub") then
-    CoreGui.OptimizedSpeedHub:Destroy()
+-- Khung Menu Chính (Main Frame)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 250, 0, 200)
+MainFrame.Position = UDim2.new(0.5, -125, 0.4, -100)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true -- Bật kéo thả menu linh hoạt
+MainFrame.Parent = ScreenGui
+
+-- Bo góc cho Menu
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainFrame
+
+-- Tiêu đề Menu
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+Title.Text = "TWEEN TP MENU"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.BorderSizePixel = 0
+Title.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.Parent = Title
+
+-- Khung nhập tên Player (TextBox)
+local NameInput = Instance.new("TextBox")
+NameInput.Name = "NameInput"
+NameInput.Size = UDim2.new(0, 210, 0, 35)
+NameInput.Position = UDim2.new(0, 20, 0, 55)
+NameInput.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+NameInput.Text = ""
+NameInput.PlaceholderText = "Nhập tên viết tắt của Player..."
+NameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+NameInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+NameInput.Font = Enum.Font.Gotham
+NameInput.TextSize = 12
+NameInput.BorderSizePixel = 0
+NameInput.Parent = MainFrame
+
+local InputCorner = Instance.new("UICorner")
+InputCorner.CornerRadius = UDim.new(0, 6)
+InputCorner.Parent = NameInput
+
+-- Khung nhập Tốc độ Bay (Speed Input)
+local SpeedInput = Instance.new("TextBox")
+SpeedInput.Name = "SpeedInput"
+SpeedInput.Size = UDim2.new(0, 210, 0, 35)
+SpeedInput.Position = UDim2.new(0, 20, 0, 100)
+SpeedInput.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+SpeedInput.Text = "60" -- Mặc định là tốc độ 60 (khá an toàn)
+SpeedInput.PlaceholderText = "Tốc độ bay (Mặc định: 60)"
+SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedInput.Font = Enum.Font.Gotham
+SpeedInput.TextSize = 12
+SpeedInput.BorderSizePixel = 0
+SpeedInput.Parent = MainFrame
+
+local SpeedCorner = Instance.new("UICorner")
+SpeedCorner.CornerRadius = UDim.new(0, 6)
+SpeedCorner.Parent = SpeedInput
+
+-- Nút Kích Hoạt Tween TP (Button)
+local TPButton = Instance.new("TextButton")
+TPButton.Name = "TPButton"
+TPButton.Size = UDim2.new(0, 210, 0, 40)
+TPButton.Position = UDim2.new(0, 20, 0, 145)
+TPButton.BackgroundColor3 = Color3.fromRGB(0, 150, 100)
+TPButton.Text = "BẮT ĐẦU BAY"
+TPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+TPButton.Font = Enum.Font.GothamBold
+TPButton.TextSize = 13
+TPButton.BorderSizePixel = 0
+TPButton.Parent = MainFrame
+
+local ButtonCorner = Instance.new("UICorner")
+ButtonCorner.CornerRadius = UDim.new(0, 6)
+ButtonCorner.Parent = TPButton
+
+--- ==========================================
+--- LOGIC XỬ LÝ TWEEN TP
+--- ==========================================
+
+local currentTween = nil
+
+-- Hàm tìm kiếm Player theo tên viết tắt
+local function findTargetPlayer(name)
+    name = name:lower()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Name:lower():sub(1, #name) == name then
+            return player
+        end
+    end
+    return nil
 end
 
--- ==========================================
--- 2. TẠO GUI TỐI GIẢN (ÍT TỐN BỘ NHỚ)
--- ==========================================
-local sg = Instance.new("ScreenGui")
-sg.Name = "OptimizedSpeedHub"
-sg.ResetOnSpawn = false
-sg.Parent = CoreGui
+-- Hàm xử lý Tween di chuyển
+local function tweenToTarget(targetPart, speed)
+    local character = LocalPlayer.Character
+    if not character then return end
+    local myRoot = character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 130)
-frame.Position = UDim2.new(0.5, -100, 0.8, 0)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.Active = true
-frame.Draggable = true
-frame.Parent = sg
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Text = "⚡ OPTIMIZED SPEED"
-title.Font = Enum.Font.GothamBold
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.BackgroundTransparency = 1
-title.Parent = frame
-
-local speedInput = Instance.new("TextBox")
-speedInput.Size = UDim2.new(0.4, 0, 0, 35)
-speedInput.Position = UDim2.new(0.05, 0, 0.3, 0)
-speedInput.Text = "50"
-speedInput.Font = Enum.Font.Gotham
-speedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-speedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedInput.Parent = frame
-Instance.new("UICorner", speedInput).CornerRadius = UDim.new(0, 5)
-
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0.45, 0, 0, 35)
-toggleBtn.Position = UDim2.new(0.5, 0, 0.3, 0)
-toggleBtn.Text = "BẬT"
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
-toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.Parent = frame
-Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 5)
-
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0.9, 0, 0, 30)
-closeBtn.Position = UDim2.new(0.05, 0, 0.7, 0)
-closeBtn.Text = "ĐÓNG & RESET"
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.Parent = frame
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 5)
-
--- ==========================================
--- 3. LOGIC TỐI ƯU HÓA (EVENT-DRIVEN)
--- ==========================================
-local isEnabled = false
-
--- Hàm áp dụng tốc độ và giữ nó cố định
-local function applySpeed(character)
-    local humanoid = character:WaitForChild("Humanoid", 5)
-    if not humanoid then return end
-
-    -- Ngắt kết nối cũ nếu có để tránh rò rỉ bộ nhớ (Memory Leak)
-    if speedConnection then
-        speedConnection:Disconnect()
-        speedConnection = nil
+    -- Nếu đang bay cũ thì hủy đi để bay cái mới
+    if currentTween then
+        currentTween:Cancel()
     end
 
-    if isEnabled then
-        local targetSpeed = tonumber(speedInput.Text) or 16
-        humanoid.WalkSpeed = targetSpeed
+    -- Tính khoảng cách và thời gian dựa trên tốc độ
+    local distance = (targetPart.Position - myRoot.Position).Magnitude
+    local duration = distance / speed
 
-        -- Chỉ kích hoạt khi game cố tình đổi lại tốc độ của bạn (Cực kỳ tối ưu)
-        speedConnection = humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-            if humanoid.WalkSpeed ~= targetSpeed and isEnabled then
-                humanoid.WalkSpeed = targetSpeed
-            end
-        end)
-    else
-        humanoid.WalkSpeed = 16
-    end
-end
+    local tweenInfo = TweenInfo.new(
+        duration,
+        Enum.EasingStyle.Linear, -- Giữ tốc độ đều suốt quãng đường
+        Enum.EasingDirection.Out
+    )
 
--- Xử lý nút Bật/Tắt
-toggleBtn.MouseButton1Click:Connect(function()
-    isEnabled = not isEnabled
-    toggleBtn.Text = isEnabled and "TẮT" or "BẬT"
-    toggleBtn.BackgroundColor3 = isEnabled and Color3.fromRGB(200, 100, 0) or Color3.fromRGB(0, 150, 80)
+    -- Đích đến sẽ cách nhân vật kia một khoảng nhỏ (ở trên đầu 2 mud) để tránh kẹt đất
+    local targetCFrame = targetPart.CFrame * CFrame.new(0, 2, 0)
+
+    currentTween = TweenService:Create(myRoot, tweenInfo, {CFrame = targetCFrame})
+    currentTween:Play()
     
-    if player.Character then
-        applySpeed(player.Character)
-    end
-end)
+    -- Đổi màu nút khi đang bay
+    TPButton.Text = "ĐANG BAY... (Bấm lại để dừng)"
+    TPButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    
+    currentTween.Completed:Connect(function()
+        TPButton.Text = "BẮT ĐẦU BAY"
+        TPButton.BackgroundColor3 = Color3.fromRGB(0, 150, 100)
+        currentTween = nil
+    end)
+end
 
--- Tự động áp dụng lại tốc độ khi bạn chết và hồi sinh
-player.CharacterAdded:Connect(function(newCharacter)
-    if isEnabled then
-        applySpeed(newCharacter)
+-- Sự kiện khi bấm nút
+TPButton.MouseButton1Click:Connect(function()
+    -- Nếu đang bay mà bấm lại thì dừng
+    if currentTween then
+        currentTween:Cancel()
+        TPButton.Text = "BẮT ĐẦU BAY"
+        TPButton.BackgroundColor3 = Color3.fromRGB(0, 150, 100)
+        currentTween = nil
+        return
     end
-end)
 
--- Xử lý nút Đóng (Dọn dẹp bộ nhớ sạch sẽ)
-closeBtn.MouseButton1Click:Connect(function()
-    isEnabled = false
-    if speedConnection then
-        speedConnection:Disconnect()
+    local inputName = NameInput.Text
+    local speed = tonumber(SpeedInput.Text) or 60
+
+    if inputName == "" then
+        TPButton.Text = "HÃY NHẬP TÊN TRƯỚC!"
+        task.wait(1.5)
+        TPButton.Text = "BẮT ĐẦU BAY"
+        return
     end
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = 16
+
+    local targetPlayer = findTargetPlayer(inputName)
+    if targetPlayer and targetPlayer.Character then
+        local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if targetRoot then
+            tweenToTarget(targetRoot, speed)
+        else
+            TPButton.Text = "KHÔNG TÌM THẤY ROOT PART!"
+            task.wait(1.5)
+            TPButton.Text = "BẮT ĐẦU BAY"
+        end
+    else
+        TPButton.Text = "KHÔNG THẤY NGƯỜI CHƠI NÀY!"
+        task.wait(1.5)
+        TPButton.Text = "BẮT ĐẦU BAY"
     end
-    sg:Destroy()
 end)
