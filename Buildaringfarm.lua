@@ -1,6 +1,9 @@
--- Tạo ScreenGui chính
+-- ==========================================
+-- DRAGON MENU HUB - BUILD A BOAT / RING FARM
+-- ==========================================
+
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DragonMenuGui"
+ScreenGui.Name = "DragonRingFarmHub"
 ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -8,18 +11,18 @@ ScreenGui.ResetOnSpawn = false
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- Nền tối
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
 MainFrame.Size = UDim2.new(0, 600, 0, 400)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
-MainFrame.Draggable = true -- Cho phép kéo di chuyển menu
+MainFrame.Draggable = true -- Giữ chuột để di chuyển menu
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
--- Tiêu đề Menu (Title)
+-- Tiêu đề Menu
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Parent = MainFrame
@@ -27,12 +30,12 @@ Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0, 210, 0, 15)
 Title.Size = UDim2.new(0, 380, 0, 30)
 Title.Font = Enum.Font.SourceSansBold
-Title.Text = "Dragon Menu | Universal - v5.9"
-Title.TextColor3 = Color3.fromRGB(255, 0, 0) -- Màu chữ đỏ
+Title.Text = "Dragon Menu | Ring Farm Edition"
+Title.TextColor3 = Color3.fromRGB(255, 0, 0)
 Title.TextSize = 24
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Thanh menu bên cạnh (Sidebar Container)
+-- Sidebar (Thanh danh mục bên trái)
 local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
 Sidebar.Parent = MainFrame
@@ -55,17 +58,24 @@ local UIPadding = Instance.new("UIPadding")
 UIPadding.Parent = Sidebar
 UIPadding.PaddingTop = UDim.new(0, 10)
 
--- Khung chứa nội dung bên phải (Content Frame)
+-- Khung chứa nội dung (Content Frame)
 local ContentFrame = Instance.new("Frame")
 ContentFrame.Name = "ContentFrame"
 ContentFrame.Parent = MainFrame
-ContentFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+ContentFrame.BackgroundTransparency = 1
 ContentFrame.Position = UDim2.new(0, 205, 0, 55)
 ContentFrame.Size = UDim2.new(0, 385, 0, 335)
-ContentFrame.BackgroundTransparency = 1 -- Ẩn nền chính để các tab tự hiển thị
 
 ---------------------------------------------------------
--- HÀM TẠO NÚT MENU (TABS)
+-- BIẾN ĐIỀU KHIỂN LOGIC (SETTINGS VÀ STATE)
+---------------------------------------------------------
+local _G = _G or {}
+_G.AutoFarm = false
+_G.RandomSpeed = false
+_G.BaseDelay = 2 -- Thời gian chờ gốc (giây) giữa các vòng
+
+---------------------------------------------------------
+-- HÀM TẠO TAB NÚT
 ---------------------------------------------------------
 local function CreateTab(tabName, order)
 	local TabButton = Instance.new("TextButton")
@@ -83,33 +93,27 @@ local function CreateTab(tabName, order)
 	ButtonCorner.CornerRadius = UDim.new(0, 8)
 	ButtonCorner.Parent = TabButton
 	
-	-- Viền đỏ cho nút giống trong hình
 	local UIStroke = Instance.new("UIStroke")
 	UIStroke.Color = Color3.fromRGB(255, 0, 0)
 	UIStroke.Thickness = 1.2
-	UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	UIStroke.Parent = TabButton
 
-	-- Tạo trang nội dung riêng cho Tab này
 	local Page = Instance.new("ScrollingFrame")
 	Page.Name = tabName .. "Page"
 	Page.Parent = ContentFrame
 	Page.Size = UDim2.new(1, 0, 1, 0)
 	Page.BackgroundTransparency = 1
-	Page.Visible = (order == 1) -- Chỉ hiển thị trang đầu tiên mặc định
+	Page.Visible = (order == 1)
 	Page.ScrollBarThickness = 4
-	Page.CanvasSize = UDim2.new(0, 0, 2, 0) -- Cuộn xuống nếu nhiều tính năng
+	Page.CanvasSize = UDim2.new(0, 0, 2, 0)
 
 	local PageLayout = Instance.new("UIListLayout")
 	PageLayout.Parent = Page
-	PageLayout.Padding = UDim.new(0, 10)
+	PageLayout.Padding = UDim.new(0, 12)
 
-	-- Sự kiện chuyển đổi Tab khi Click
 	TabButton.MouseButton1Click:Connect(function()
 		for _, child in pairs(ContentFrame:GetChildren()) do
-			if child:IsA("ScrollingFrame") then
-				child.Visible = false
-			end
+			if child:IsA("ScrollingFrame") then child.Visible = false end
 		end
 		Page.Visible = true
 	end)
@@ -117,19 +121,14 @@ local function CreateTab(tabName, order)
 	return Page
 end
 
----------------------------------------------------------
--- KHỞI TẠO CÁC TAB (GIỐNG TRONG HÌNH)
----------------------------------------------------------
-local MainPage = CreateTab("Main", 1)
-local PlayerPage = CreateTab("Player", 2)
-local VisualsPage = CreateTab("Visuals", 3)
-local ServerPage = CreateTab("Server", 4)
-local SettingsPage = CreateTab("Settings", 5)
+-- Khởi tạo các Tab cần thiết
+local FarmPage = CreateTab("Auto Farm", 1)
+local TeleportPage = CreateTab("Teleports", 2)
+local SettingsPage = CreateTab("Settings", 3)
 
 ---------------------------------------------------------
--- HÀM TẠO TÍNH NĂNG (TOGGLES / SLIDERS MẪU)
+-- HÀM TẠO CÁC THÀNH PHẦN GIAO DIỆN (TOGGLE / SLIDER)
 ---------------------------------------------------------
--- 1. Tạo Nút Bật/Tắt (Toggle)
 local function AddToggle(parentPage, text, callback)
 	local ToggleFrame = Instance.new("Frame")
 	ToggleFrame.Size = UDim2.new(0, 360, 0, 40)
@@ -137,19 +136,19 @@ local function AddToggle(parentPage, text, callback)
 	ToggleFrame.Parent = parentPage
 
 	local Label = Instance.new("TextLabel")
-	Label.Size = UDim2.new(0, 200, 1, 0)
+	Label.Size = UDim2.new(0, 240, 1, 0)
 	Label.BackgroundTransparency = 1
-	Label.Font = Enum.Font.SourceSans
+	Label.Font = Enum.Font.SourceSansSemibold
 	Label.Text = text
-	Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Label.TextColor3 = Color3.fromRGB(230, 230, 230)
 	Label.TextSize = 18
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = ToggleFrame
 
 	local Switch = Instance.new("TextButton")
-	Switch.Size = UDim2.new(0, 40, 0, 24)
-	Switch.Position = UDim2.new(1, -50, 0.5, -12)
-	Switch.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	Switch.Size = UDim2.new(0, 45, 0, 24)
+	Switch.Position = UDim2.new(1, -55, 0.5, -12)
+	Switch.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 	Switch.Text = ""
 	Switch.Parent = ToggleFrame
 	
@@ -164,16 +163,11 @@ local function AddToggle(parentPage, text, callback)
 	local toggled = false
 	Switch.MouseButton1Click:Connect(function()
 		toggled = not toggled
-		if toggled then
-			Switch.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Đỏ khi bật
-		else
-			Switch.BackgroundColor3 = Color3.fromRGB(40, 40, 40) -- Tối khi tắt
-		end
+		Switch.BackgroundColor3 = toggled and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(30, 30, 30)
 		callback(toggled)
 	end)
 end
 
--- 2. Tạo Thanh Trượt (Slider)
 local function AddSlider(parentPage, text, min, max, default, callback)
 	local SliderFrame = Instance.new("Frame")
 	SliderFrame.Size = UDim2.new(0, 360, 0, 50)
@@ -181,11 +175,11 @@ local function AddSlider(parentPage, text, min, max, default, callback)
 	SliderFrame.Parent = parentPage
 
 	local Label = Instance.new("TextLabel")
-	Label.Size = UDim2.new(0, 150, 0, 20)
+	Label.Size = UDim2.new(0, 200, 0, 20)
 	Label.BackgroundTransparency = 1
 	Label.Font = Enum.Font.SourceSans
 	Label.Text = text
-	Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Label.TextColor3 = Color3.fromRGB(200, 200, 200)
 	Label.TextSize = 16
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = SliderFrame
@@ -200,7 +194,6 @@ local function AddSlider(parentPage, text, min, max, default, callback)
 	ValueLabel.TextSize = 16
 	ValueLabel.Parent = SliderFrame
 
-	-- Thanh trượt chính
 	local SliderBar = Instance.new("TextButton")
 	SliderBar.Size = UDim2.new(0, 340, 0, 6)
 	SliderBar.Position = UDim2.new(0, 10, 0, 30)
@@ -214,20 +207,11 @@ local function AddSlider(parentPage, text, min, max, default, callback)
 	SliderFill.BorderSizePixel = 0
 	SliderFill.Parent = SliderBar
 
-	-- Thêm chức năng kéo cho Slider (Cơ bản)
 	local UserInputService = game:GetService("UserInputService")
 	local dragging = false
 
 	SliderBar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = true
-		end
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
 	end)
 
-	UserInputService.InputChanged:Connect(function(input)
-		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-			local mousePos = UserInputService:GetMouseLocation()
-			local relativeX = mousePos.X - SliderBar.AbsolutePosition.X
-			local percentage = math.clamp(relativeX / SliderBar.AbsoluteSize.X, 0, 1)
-			
-			SliderFill.Size = UDim2.new(percentage
+	UserInputService.Input
