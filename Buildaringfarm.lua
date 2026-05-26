@@ -1,378 +1,160 @@
--- Khởi tạo hoặc xóa menu cũ nếu đã chạy trước đó để tránh trùng giao diện
-local oldGui = game.CoreGui:FindFirstChild("BuildARingFarmCustom")
-if oldGui then oldGui:Destroy() end
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BuildARingFarmCustom"
-ScreenGui.Parent = game.CoreGui
-ScreenGui.ResetOnSpawn = false
-
----------------------------------------------------------------------------
--- 1. KHUNG CHÍNH CỦA MENU (MAIN FRAME)
----------------------------------------------------------------------------
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 550, 0, 360)
-MainFrame.Position = UDim2.new(0.5, -275, 0.5, -180)
-MainFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true 
-MainFrame.Parent = ScreenGui
-
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 10)
-MainCorner.Parent = MainFrame
-
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(45, 45, 50)
-UIStroke.Thickness = 1
-UIStroke.Parent = MainFrame
+-- Tạo Cửa Sổ Menu Chính
+local Window = OrionLib:MakeWindow({
+    Name = "Build A Ring Farm [Orion Version]", 
+    HidePremium = false, 
+    SaveConfig = true, 
+    ConfigFolder = "OrionCustomFarm",
+    IntroText = "Đang Tải Menu..."
+})
 
 ---------------------------------------------------------------------------
--- 2. THANH DANH MỤC BÊN TRÁI (SIDEBAR)
+-- BIẾN TOÀN CỤC (KÈM DỮ LIỆU GIẢ LẬP ĐỂ KHÔNG BỊ LỖI CHỨC NĂNG)
 ---------------------------------------------------------------------------
-local SideBar = Instance.new("Frame")
-SideBar.Size = UDim2.new(0, 150, 1, 0)
-SideBar.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
-SideBar.BorderSizePixel = 0
-SideBar.Parent = MainFrame
+_G.SelectedSeed = "None"
+_G.AutoRoll = false
+_G.AutoFertilizer = false
+_G.WalkSpeedValue = 16
+_G.SpeedActive = false
 
-local SideCorner = Instance.new("UICorner")
-SideCorner.CornerRadius = UDim.new(0, 10)
-SideCorner.Parent = SideBar
-
-local GameTitle = Instance.new("TextLabel")
-GameTitle.Size = UDim2.new(1, -10, 0, 40)
-GameTitle.Position = UDim2.new(0, 12, 0, 10)
-GameTitle.BackgroundTransparency = 1
-GameTitle.Text = "Build A Ring Farm"
-GameTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-GameTitle.TextSize = 14
-GameTitle.Font = Enum.Font.SourceSansBold
-GameTitle.TextXAlignment = Enum.TextXAlignment.Left
-GameTitle.Parent = SideBar
-
-local SubTitle = Instance.new("TextLabel")
-SubTitle.Size = UDim2.new(1, -10, 0, 15)
-SubTitle.Position = UDim2.new(0, 12, 0, 25)
-SubTitle.BackgroundTransparency = 1
-SubTitle.Text = "Created by Gemini [NO KEY]"
-SubTitle.TextColor3 = Color3.fromRGB(150, 150, 150)
-SubTitle.TextSize = 11
-SubTitle.Font = Enum.Font.SourceSans
-SubTitle.TextXAlignment = Enum.TextXAlignment.Left
-SubTitle.Parent = SideBar
-
-local TabButtonsContainer = Instance.new("Frame")
-TabButtonsContainer.Size = UDim2.new(1, 0, 1, -60)
-TabButtonsContainer.Position = UDim2.new(0, 0, 0, 55)
-TabButtonsContainer.BackgroundTransparency = 1
-TabButtonsContainer.Parent = SideBar
-
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Parent = TabButtonsContainer
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 4)
-
----------------------------------------------------------------------------
--- 3. NÚT ĐÓNG MENU (NÚT X ĐỎ) -> ĐÃ SỬA LỖI CÚ PHÁP
----------------------------------------------------------------------------
-local CloseButton = Instance.new("TextButton")
-CloseButton.Size = UDim2.new(0, 26, 0, 26)
-CloseButton.Position = UDim2.new(1, -36, 0, 10)
-CloseButton.BackgroundColor3 = Color3.fromRGB(210, 50, 50)
-CloseButton.Text = "✕"
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Font = Enum.Font.SourceSansBold
-CloseButton.TextSize = 14
-CloseButton.AutoButtonColor = true -- Đã sửa lỗi thừa dấu ngoặc ở đây
-CloseButton.Parent = MainFrame
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
-CloseCorner.Parent = CloseButton
-
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
----------------------------------------------------------------------------
--- 4. KHU VỰC HIỂN THỊ NỘI DUNG CHỨC NĂNG (PAGES CONTAINER)
----------------------------------------------------------------------------
-local PagesContainer = Instance.new("Frame")
-PagesContainer.Size = UDim2.new(1, -170, 1, -50)
-PagesContainer.Position = UDim2.new(0, 160, 0, 40)
-PagesContainer.BackgroundTransparency = 1
-PagesContainer.Parent = MainFrame
-
-local function CreatePage()
-    local Page = Instance.new("ScrollingFrame")
-    Page.Size = UDim2.new(1, 0, 1, 0)
-    Page.BackgroundTransparency = 1
-    Page.ScrollBarThickness = 3
-    Page.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
-    Page.Visible = false
-    Page.Parent = PagesContainer
-    
-    local PageList = Instance.new("UIListLayout")
-    PageList.Parent = Page
-    PageList.SortOrder = Enum.SortOrder.LayoutOrder
-    PageList.Padding = UDim.new(0, 10)
-    
-    return Page
-end
-
-local FarmingPage = CreatePage()
-local UpgradesPage = CreatePage()
-local UtilitiesPage = CreatePage()
-
-local currentTab = nil
-local function AddTab(name, pageTarget)
-    local TabButton = Instance.new("TextButton")
-    TabButton.Size = UDim2.new(1, -16, 0, 32)
-    TabButton.Position = UDim2.new(0, 8, 0, 0)
-    TabButton.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
-    TabButton.BackgroundTransparency = 1
-    TabButton.Text = "   " .. name
-    TabButton.TextColor3 = Color3.fromRGB(180, 180, 180)
-    TabButton.TextSize = 13
-    TabButton.Font = Enum.Font.SourceSansSemibold
-    TabButton.TextXAlignment = Enum.TextXAlignment.Left
-    TabButton.Parent = TabButtonsContainer
-    
-    local TabCorner = Instance.new("UICorner")
-    TabCorner.CornerRadius = UDim.new(0, 6)
-    TabCorner.Parent = TabButton
-    
-    TabButton.MouseButton1Click:Connect(function()
-        if currentTab then
-            currentTab.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
-            currentTab.BackgroundTransparency = 1
-            currentTab.TextColor3 = Color3.fromRGB(180, 180, 180)
-        end
-        FarmingPage.Visible = false
-        UpgradesPage.Visible = false
-        UtilitiesPage.Visible = false
-        
-        TabButton.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-        TabButton.BackgroundTransparency = 0
-        TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        pageTarget.Visible = true
-        currentTab = TabButton
-    end)
-end
-
-AddTab("🌾 Farming", FarmingPage)
-AddTab("⚡ Upgrades", UpgradesPage)
-AddTab("🛠️ Utilities", UtilitiesPage)
-
-FarmingPage.Visible = true
-
----------------------------------------------------------------------------
--- 5. CÁC HÀM TẠO UI THÀNH PHẦN (COMPONENT BUILDERS)
----------------------------------------------------------------------------
-local function CreateSection(titleText, parentPage)
-    local SecLabel = Instance.new("TextLabel")
-    SecLabel.Size = UDim2.new(1, 0, 0, 20)
-    SecLabel.BackgroundTransparency = 1
-    SecLabel.Text = titleText:upper()
-    SecLabel.TextColor3 = Color3.fromRGB(130, 130, 140)
-    SecLabel.TextSize = 12
-    SecLabel.Font = Enum.Font.SourceSansBold
-    SecLabel.TextXAlignment = Enum.TextXAlignment.Left
-    SecLabel.Parent = parentPage
-end
-
-local function CreateToggle(toggleName, parentPage, callback)
-    local ToggleFrame = Instance.new("Frame")
-    ToggleFrame.Size = UDim2.new(1, -10, 0, 40)
-    ToggleFrame.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
-    ToggleFrame.BorderSizePixel = 0
-    ToggleFrame.Parent = parentPage
-    
-    local TFCorner = Instance.new("UICorner")
-    TFCorner.CornerRadius = UDim.new(0, 6)
-    TFCorner.Parent = ToggleFrame
-    
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, -60, 1, 0)
-    Label.Position = UDim2.new(0, 12, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = toggleName
-    Label.TextColor3 = Color3.fromRGB(230, 230, 230)
-    Label.TextSize = 14
-    Label.Font = Enum.Font.SourceSans
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = ToggleFrame
-    
-    local Switch = Instance.new("TextButton")
-    Switch.Size = UDim2.new(0, 36, 0, 20)
-    Switch.Position = UDim2.new(1, -48, 0.5, -10)
-    Switch.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
-    Switch.Text = ""
-    Switch.Parent = ToggleFrame
-    
-    local SwCorner = Instance.new("UICorner")
-    SwCorner.CornerRadius = UDim.new(1, 0)
-    SwCorner.Parent = Switch
-    
-    local Circle = Instance.new("Frame")
-    Circle.Size = UDim2.new(0, 14, 0, 14)
-    Circle.Position = UDim2.new(0, 3, 0.5, -7)
-    Circle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-    Circle.Parent = Switch
-    
-    local CirCorner = Instance.new("UICorner")
-    CirCorner.CornerRadius = UDim.new(1, 0)
-    CirCorner.Parent = Circle
-    
-    local state = false
-    
-    local function updateUI()
-        if state then
-            Switch.BackgroundColor3 = Color3.fromRGB(0, 180, 90)
-            Circle.Position = UDim2.new(1, -17, 0.5, -7)
-            Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        else
-            Switch.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
-            Circle.Position = UDim2.new(0, 3, 0.5, -7)
-            Circle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-        end
-    end
-
-    Switch.MouseButton1Click:Connect(function()
-        state = not state
-        updateUI()
-        task.spawn(function() callback(state, function(forceValue) 
-            state = forceValue
-            updateUI()
-        end) end)
-    end)
-end
-
-local _G_SelectedSeed = "None"
-local function CreateDropdown(dropdownName, optionsList, parentPage)
-    local DropdownFrame = Instance.new("Frame")
-    DropdownFrame.Size = UDim2.new(1, -10, 0, 40)
-    DropdownFrame.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
-    DropdownFrame.Parent = parentPage
-    
-    local DFCorner = Instance.new("UICorner")
-    DFCorner.CornerRadius = UDim.new(0, 6)
-    DFCorner.Parent = DropdownFrame
-    
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0, 120, 1, 0)
-    Label.Position = UDim2.new(0, 12, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = dropdownName
-    Label.TextColor3 = Color3.fromRGB(230, 230, 230)
-    Label.TextSize = 14
-    Label.Font = Enum.Font.SourceSans
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = DropdownFrame
-    
-    local ChoiceBtn = Instance.new("TextButton")
-    ChoiceBtn.Size = UDim2.new(1, -150, 0, 26)
-    ChoiceBtn.Position = UDim2.new(0, 138, 0.5, -13)
-    ChoiceBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
-    ChoiceBtn.Text = _G_SelectedSeed
-    ChoiceBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ChoiceBtn.Font = Enum.Font.SourceSans
-    ChoiceBtn.TextSize = 13
-    ChoiceBtn.Parent = DropdownFrame
-    
-    local CBCorner = Instance.new("UICorner")
-    CBCorner.CornerRadius = UDim.new(0, 4)
-    CBCorner.Parent = ChoiceBtn
-    
-    local ListFrame = Instance.new("Frame")
-    ListFrame.Size = UDim2.new(1, -150, 0, #optionsList * 25)
-    ListFrame.Position = UDim2.new(0, 138, 1, 5)
-    ListFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    ListFrame.ZIndex = 5
-    ListFrame.Visible = false
-    ListFrame.Parent = DropdownFrame
-    
-    local LFList = Instance.new("UIListLayout")
-    LFList.Parent = ListFrame
-    
-    for _, optName in pairs(optionsList) do
-        local OptBtn = Instance.new("TextButton")
-        OptBtn.Size = UDim2.new(1, 0, 0, 25)
-        OptBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-        OptBtn.Text = optName
-        OptBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-        OptBtn.Font = Enum.Font.SourceSans
-        OptBtn.TextSize = 13
-        OptBtn.ZIndex = 6
-        OptBtn.Parent = ListFrame
-        
-        OptBtn.MouseButton1Click:Connect(function()
-            _G_SelectedSeed = optName
-            ChoiceBtn.Text = optName
-            ListFrame.Visible = false
-        end)
-    end
-    
-    ChoiceBtn.MouseButton1Click:Connect(function()
-        ListFrame.Visible = not ListFrame.Visible
-    end)
-end
-
----------------------------------------------------------------------------
--- 6. THIẾT LẬP CÁC TÍNH NĂNG CHI TIẾT
----------------------------------------------------------------------------
-
--- ==================== TAB 1: FARMING ====================
-CreateSection("Auto Roll Seeds", FarmingPage)
-
+-- Hàm giả lập để lấy hạt giống vừa roll (Bạn có thể thay bằng code check thực tế của game)
 local function GetCurrentRolledSeed()
-    local testSeeds = {"Hành hành", "Hạt giống Void", "Papaya Seed"}
+    local testSeeds = {"None", "Hành hành", "Hạt giống Void", "Papaya Seed"}
     return testSeeds[math.random(1, #testSeeds)]
 end
 
-CreateToggle("Auto Roll Seeds", FarmingPage, function(isActive, setToggleUI)
-    _G.AutoRoll = isActive
-    while _G.AutoRoll do
-        task.wait(0.5) 
+---------------------------------------------------------------------------
+-- TAB 1: FARMING (QUẢN LÝ HẠT GIỐNG & ROLL)
+---------------------------------------------------------------------------
+local FarmTab = Window:MakeTab({
+    Name = "🌾 Farming",
+    Icon = "rbxassetid://4483362458",
+    PremiumOnly = false
+})
+
+FarmTab:AddSection({
+    Name = "AUTO ROLL SEEDS"
+})
+
+-- Dropdown chọn hạt giống để dừng lại
+FarmTab:AddDropdown({
+    Name = "Chọn hạt giống muốn giữ lại:",
+    Default = "None",
+    Options = {"None", "Hành hành", "Hạt giống Void", "Papaya Seed"},
+    Callback = function(Value)
+        _G.SelectedSeed = Value
+        print("Đã chọn hạt giống mục tiêu: " .. Value)
+    end    
+})
+
+-- Nút gạt Auto Roll
+local RollToggle = FarmTab:AddToggle({
+    Name = "Tự Động Roll Hạt Giống (Auto Roll)",
+    Default = false,
+    Callback = function(Value)
+        _G.AutoRoll = Value
         
-        local currentSeed = GetCurrentRolledSeed()
-        print("Đã Roll ra: " .. currentSeed)
-        
-        if _G_SelectedSeed ~= "None" and currentSeed == _G_SelectedSeed then
-            print("🎉 Trúng hạt mong muốn [".. _G_SelectedSeed .."]! Dừng Roll.")
-            _G.AutoRoll = false
-            setToggleUI(false) 
-            break
+        task.spawn(function()
+            while _G.AutoRoll do
+                task.wait(0.5) -- Tốc độ roll (0.5 giây/lần)
+                
+                -- Thực hiện hành động roll của game tại đây
+                local rolled = GetCurrentRolledSeed()
+                print("Bạn vừa Roll ra: " .. rolled)
+                
+                -- Nếu trúng hạt giống đã chọn ở Dropdown thì tự dừng
+                if _G.SelectedSeed ~= "None" and rolled == _G.SelectedSeed then
+                    OrionLib:MakeNotification({
+                        Name = "Thành Công!",
+                        Content = "🎉 Đã tìm thấy [" .. _G.SelectedSeed .. "]. Dừng Roll!",
+                        Image = "rbxassetid://4483362458",
+                        Duration = 5
+                    })
+                    _G.AutoRoll = false
+                    -- Cập nhật lại nút gạt trên giao diện về trạng thái Tắt
+                    OrionLib:ChangeToggle("Tự Động Roll Hạt Giống (Auto Roll)", false)
+                    break
+                end
+            end
+        end)
+    end
+})
+
+---------------------------------------------------------------------------
+-- TAB 2: UPGRADES (PHÂN BÓN & NÂNG CẤP)
+---------------------------------------------------------------------------
+local UpgradeTab = Window:MakeTab({
+    Name = "⚡ Upgrades",
+    Icon = "rbxassetid://4483362458",
+    PremiumOnly = false
+})
+
+UpgradeTab:AddSection({
+    Name = "QUẢN LÝ PHÂN BÓN"
+})
+
+UpgradeTab:AddToggle({
+    Name = "Tự Động Bón Phân (Auto Fertilizer)",
+    Default = false,
+    Callback = function(Value)
+        _G.AutoFertilizer = Value
+        task.spawn(function()
+            while _G.AutoFertilizer do
+                task.wait(1) -- Cách 1 giây bón một lần
+                print("Đang tự động bón phân để tăng sản lượng hạt giống...")
+                -- Chèn mã bón phân của game vào đây nếu có
+            end
+        end)
+    end
+})
+
+---------------------------------------------------------------------------
+-- TAB 3: UTILITIES (HỖ TRỢ NGƯỜI CHƠI & SỬA LỖI WALKSPEED)
+---------------------------------------------------------------------------
+local UtilTab = Window:MakeTab({
+    Name = "🛠️ Utilities",
+    Icon = "rbxassetid://4483362458",
+    PremiumOnly = false
+})
+
+UtilTab:AddSection({
+    Name = "TÙY CHỈNH NHÂN VẬT"
+})
+
+UtilTab:AddToggle({
+    Name = "Kích Hoạt Chạy Nhanh (WalkSpeed 100)",
+    Default = false,
+    Callback = function(Value)
+        _G.SpeedActive = Value
+        if Value then
+            _G.WalkSpeedValue = 100
+        else
+            _G.WalkSpeedValue = 16
+            -- Trả về tốc độ mặc định khi tắt
+            pcall(function()
+                game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
+            end)
+        end
+    end
+})
+
+-- VÒNG LẶP CHẠY NGẦM ĐỂ KHÓA CHẶT TỐC ĐỘ CHẠY (SỬA LỖI KHÔNG HOẠT ĐỘNG)
+task.spawn(function()
+    while true do
+        task.wait(0.1) -- Kiểm tra liên tục để ép tốc độ nhân vật không bị reset
+        if _G.SpeedActive then
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                if player.Character and player.Character:FindFirstChild("Humanoid") then
+                    player.Character.Humanoid.WalkSpeed = _G.WalkSpeedValue
+                end
+            end)
         end
     end
 end)
 
-CreateDropdown("Hạt Giống Giữ Lại:", {"None", "Hành hành", "Hạt giống Void", "Papaya Seed"}, FarmingPage)
-
--- ==================== TAB 2: UPGRADES ====================
-CreateSection("Quản Lý Phân Bón", UpgradesPage)
-
-CreateToggle("Auto Bón Phân (Auto Fertilizer)", UpgradesPage, function(isActive)
-    _G.AutoFertilizer = isActive
-    while _G.AutoFertilizer do
-        task.wait(1) 
-        print("Đang tự động bón phân cho hạt giống...")
-    end
-end)
-
--- ==================== TAB 3: UTILITIES ====================
-CreateSection("Sửa Lỗi Người Chơi", UtilitiesPage)
-
-_G.WalkSpeedValue = 16
-_G.SpeedHackActive = false
-
-CreateToggle("Chạy Nhanh Vô Hạn (WalkSpeed 100)", UtilitiesPage, function(isActive)
-    _G.SpeedHackActive = isActive
-    if isActive then
-        _G.WalkSpeedValue = 100
-    else
-        _G.WalkSpeedValue = 16
-        local player = game.Players.LocalPlayer
-        if player.Character and player.Character:FindFirstChild("
+---------------------------------------------------------------------------
+-- KHỞI CHẠY MENU
+---------------------------------------------------------------------------
+OrionLib:Init()
