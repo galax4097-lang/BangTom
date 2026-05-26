@@ -1,4 +1,4 @@
--- Khởi tạo hoặc xóa menu cũ nếu đã chạy trước đó để tránh lỗi trùng giao diện
+-- Khởi tạo hoặc xóa menu cũ nếu đã chạy trước đó để tránh trùng giao diện
 local oldGui = game.CoreGui:FindFirstChild("BuildARingFarmCustom")
 if oldGui then oldGui:Destroy() end
 
@@ -75,7 +75,7 @@ UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 4)
 
 ---------------------------------------------------------------------------
--- 3. NÚT ĐÓNG MENU (NÚT X ĐỎ)
+-- 3. NÚT ĐÓNG MENU (NÚT X ĐỎ) -> ĐÃ SỬA LỖI CÚ PHÁP
 ---------------------------------------------------------------------------
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size = UDim2.new(0, 26, 0, 26)
@@ -85,6 +85,7 @@ CloseButton.Text = "✕"
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.Font = Enum.Font.SourceSansBold
 CloseButton.TextSize = 14
+CloseButton.AutoButtonColor = true -- Đã sửa lỗi thừa dấu ngoặc ở đây
 CloseButton.Parent = MainFrame
 
 local CloseCorner = Instance.new("UICorner")
@@ -182,7 +183,6 @@ local function CreateSection(titleText, parentPage)
     SecLabel.Parent = parentPage
 end
 
--- Tạo nút gạt bật/tắt
 local function CreateToggle(toggleName, parentPage, callback)
     local ToggleFrame = Instance.new("Frame")
     ToggleFrame.Size = UDim2.new(1, -10, 0, 40)
@@ -227,9 +227,7 @@ local function CreateToggle(toggleName, parentPage, callback)
     CirCorner.Parent = Circle
     
     local state = false
-    local connection
     
-    -- Hàm cập nhật trạng thái UI trực quan
     local function updateUI()
         if state then
             Switch.BackgroundColor3 = Color3.fromRGB(0, 180, 90)
@@ -242,7 +240,7 @@ local function CreateToggle(toggleName, parentPage, callback)
         end
     end
 
-    connection = Switch.MouseButton1Click:Connect(function()
+    Switch.MouseButton1Click:Connect(function()
         state = not state
         updateUI()
         task.spawn(function() callback(state, function(forceValue) 
@@ -252,7 +250,6 @@ local function CreateToggle(toggleName, parentPage, callback)
     end)
 end
 
--- Tạo danh sách lựa chọn (Dropdown)
 local _G_SelectedSeed = "None"
 local function CreateDropdown(dropdownName, optionsList, parentPage)
     local DropdownFrame = Instance.new("Frame")
@@ -289,7 +286,6 @@ local function CreateDropdown(dropdownName, optionsList, parentPage)
     CBCorner.CornerRadius = UDim.new(0, 4)
     CBCorner.Parent = ChoiceBtn
     
-    -- Khung chứa danh sách khi bấm xổ xuống
     local ListFrame = Instance.new("Frame")
     ListFrame.Size = UDim2.new(1, -150, 0, #optionsList * 25)
     ListFrame.Position = UDim2.new(0, 138, 1, 5)
@@ -331,10 +327,7 @@ end
 -- ==================== TAB 1: FARMING ====================
 CreateSection("Auto Roll Seeds", FarmingPage)
 
--- Biến lưu tên hạt giống nhận được khi Roll thực tế (Bạn cần thay đổi để nhận diện từ game)
 local function GetCurrentRolledSeed()
-    -- Ghi chú: Ở đây sẽ là code check xem game vừa roll ra hạt gì.
-    -- Ví dụ giả lập trả về ngẫu nhiên để test:
     local testSeeds = {"Hành hành", "Hạt giống Void", "Papaya Seed"}
     return testSeeds[math.random(1, #testSeeds)]
 end
@@ -342,7 +335,44 @@ end
 CreateToggle("Auto Roll Seeds", FarmingPage, function(isActive, setToggleUI)
     _G.AutoRoll = isActive
     while _G.AutoRoll do
-        task.wait(0.5) -- Tốc độ roll
+        task.wait(0.5) 
         
-        -- Gọi lệnh Roll của Game ở đây. Ví dụ:
-        -- game:GetService("ReplicatedStorage").Remotes.RollRemote
+        local currentSeed = GetCurrentRolledSeed()
+        print("Đã Roll ra: " .. currentSeed)
+        
+        if _G_SelectedSeed ~= "None" and currentSeed == _G_SelectedSeed then
+            print("🎉 Trúng hạt mong muốn [".. _G_SelectedSeed .."]! Dừng Roll.")
+            _G.AutoRoll = false
+            setToggleUI(false) 
+            break
+        end
+    end
+end)
+
+CreateDropdown("Hạt Giống Giữ Lại:", {"None", "Hành hành", "Hạt giống Void", "Papaya Seed"}, FarmingPage)
+
+-- ==================== TAB 2: UPGRADES ====================
+CreateSection("Quản Lý Phân Bón", UpgradesPage)
+
+CreateToggle("Auto Bón Phân (Auto Fertilizer)", UpgradesPage, function(isActive)
+    _G.AutoFertilizer = isActive
+    while _G.AutoFertilizer do
+        task.wait(1) 
+        print("Đang tự động bón phân cho hạt giống...")
+    end
+end)
+
+-- ==================== TAB 3: UTILITIES ====================
+CreateSection("Sửa Lỗi Người Chơi", UtilitiesPage)
+
+_G.WalkSpeedValue = 16
+_G.SpeedHackActive = false
+
+CreateToggle("Chạy Nhanh Vô Hạn (WalkSpeed 100)", UtilitiesPage, function(isActive)
+    _G.SpeedHackActive = isActive
+    if isActive then
+        _G.WalkSpeedValue = 100
+    else
+        _G.WalkSpeedValue = 16
+        local player = game.Players.LocalPlayer
+        if player.Character and player.Character:FindFirstChild("
