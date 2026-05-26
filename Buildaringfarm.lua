@@ -1,217 +1,82 @@
--- ==========================================
--- DRAGON MENU HUB - BUILD A BOAT / RING FARM
--- ==========================================
+-- ====================================================================
+-- BUILD A RING FARM - UNIVERSAL AUTO FARM RING
+-- Hỗ trợ các Executor hiện nay (Solara, Wave, Celery, Macsploit...)
+-- ====================================================================
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DragonRingFarmHub"
-ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.ResetOnSpawn = false
-
--- Khung chính (Main Frame)
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
-MainFrame.Size = UDim2.new(0, 600, 0, 400)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true -- Giữ chuột để di chuyển menu
-
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 10)
-MainCorner.Parent = MainFrame
-
--- Tiêu đề Menu
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Parent = MainFrame
-Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 210, 0, 15)
-Title.Size = UDim2.new(0, 380, 0, 30)
-Title.Font = Enum.Font.SourceSansBold
-Title.Text = "Dragon Menu | Ring Farm Edition"
-Title.TextColor3 = Color3.fromRGB(255, 0, 0)
-Title.TextSize = 24
-Title.TextXAlignment = Enum.TextXAlignment.Left
-
--- Sidebar (Thanh danh mục bên trái)
-local Sidebar = Instance.new("Frame")
-Sidebar.Name = "Sidebar"
-Sidebar.Parent = MainFrame
-Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-Sidebar.Position = UDim2.new(0, 10, 0, 10)
-Sidebar.Size = UDim2.new(0, 180, 0, 380)
-Sidebar.BorderSizePixel = 0
-
-local SidebarCorner = Instance.new("UICorner")
-SidebarCorner.CornerRadius = UDim.new(0, 10)
-SidebarCorner.Parent = Sidebar
-
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Parent = Sidebar
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 8)
-UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-local UIPadding = Instance.new("UIPadding")
-UIPadding.Parent = Sidebar
-UIPadding.PaddingTop = UDim.new(0, 10)
-
--- Khung chứa nội dung (Content Frame)
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Parent = MainFrame
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Position = UDim2.new(0, 205, 0, 55)
-ContentFrame.Size = UDim2.new(0, 385, 0, 335)
-
----------------------------------------------------------
--- BIẾN ĐIỀU KHIỂN LOGIC (SETTINGS VÀ STATE)
----------------------------------------------------------
-local _G = _G or {}
-_G.AutoFarm = false
-_G.RandomSpeed = false
-_G.BaseDelay = 2 -- Thời gian chờ gốc (giây) giữa các vòng
-
----------------------------------------------------------
--- HÀM TẠO TAB NÚT
----------------------------------------------------------
-local function CreateTab(tabName, order)
-	local TabButton = Instance.new("TextButton")
-	TabButton.Name = tabName .. "Tab"
-	TabButton.Parent = Sidebar
-	TabButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-	TabButton.Size = UDim2.new(0, 160, 0, 40)
-	TabButton.Font = Enum.Font.SourceSansBold
-	TabButton.Text = tabName
-	TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	TabButton.TextSize = 16
-	TabButton.LayoutOrder = order
-	
-	local ButtonCorner = Instance.new("UICorner")
-	ButtonCorner.CornerRadius = UDim.new(0, 8)
-	ButtonCorner.Parent = TabButton
-	
-	local UIStroke = Instance.new("UIStroke")
-	UIStroke.Color = Color3.fromRGB(255, 0, 0)
-	UIStroke.Thickness = 1.2
-	UIStroke.Parent = TabButton
-
-	local Page = Instance.new("ScrollingFrame")
-	Page.Name = tabName .. "Page"
-	Page.Parent = ContentFrame
-	Page.Size = UDim2.new(1, 0, 1, 0)
-	Page.BackgroundTransparency = 1
-	Page.Visible = (order == 1)
-	Page.ScrollBarThickness = 4
-	Page.CanvasSize = UDim2.new(0, 0, 2, 0)
-
-	local PageLayout = Instance.new("UIListLayout")
-	PageLayout.Parent = Page
-	PageLayout.Padding = UDim.new(0, 12)
-
-	TabButton.MouseButton1Click:Connect(function()
-		for _, child in pairs(ContentFrame:GetChildren()) do
-			if child:IsA("ScrollingFrame") then child.Visible = false end
-		end
-		Page.Visible = true
-	end)
-
-	return Page
+if not game:IsLoaded() then 
+    game.Loaded:Wait() 
 end
 
--- Khởi tạo các Tab cần thiết
-local FarmPage = CreateTab("Auto Farm", 1)
-local TeleportPage = CreateTab("Teleports", 2)
-local SettingsPage = CreateTab("Settings", 3)
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
 
----------------------------------------------------------
--- HÀM TẠO CÁC THÀNH PHẦN GIAO DIỆN (TOGGLE / SLIDER)
----------------------------------------------------------
-local function AddToggle(parentPage, text, callback)
-	local ToggleFrame = Instance.new("Frame")
-	ToggleFrame.Size = UDim2.new(0, 360, 0, 40)
-	ToggleFrame.BackgroundTransparency = 1
-	ToggleFrame.Parent = parentPage
+-- Cấu hình tùy chỉnh nâng cao
+_G.AutoFarmRings = true
+_G.DelayBetweenRings = 0.3 -- Thời gian chờ giữa mỗi vòng (giây). Có thể tăng lên nếu bị kick.
 
-	local Label = Instance.new("TextLabel")
-	Label.Size = UDim2.new(0, 240, 1, 0)
-	Label.BackgroundTransparency = 1
-	Label.Font = Enum.Font.SourceSansSemibold
-	Label.Text = text
-	Label.TextColor3 = Color3.fromRGB(230, 230, 230)
-	Label.TextSize = 18
-	Label.TextXAlignment = Enum.TextXAlignment.Left
-	Label.Parent = ToggleFrame
+-- Hàm thực hiện Auto Farm
+local function startRingFarm()
+    while _G.AutoFarmRings do
+        -- Tự động quét các tên thư mục phổ biến chứa Vòng trong Workspace
+        local ringFolder = Workspace:FindFirstChild("Rings") 
+            or Workspace:FindFirstChild("Stages") 
+            or Workspace:FindFirstChild("RingFolder")
+            or Workspace:FindFirstChild("AllRings")
 
-	local Switch = Instance.new("TextButton")
-	Switch.Size = UDim2.new(0, 45, 0, 24)
-	Switch.Position = UDim2.new(1, -55, 0.5, -12)
-	Switch.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	Switch.Text = ""
-	Switch.Parent = ToggleFrame
-	
-	local SwitchCorner = Instance.new("UICorner")
-	SwitchCorner.CornerRadius = UDim.new(1, 0)
-	SwitchCorner.Parent = Switch
-	
-	local SwitchStroke = Instance.new("UIStroke")
-	SwitchStroke.Color = Color3.fromRGB(255, 0, 0)
-	SwitchStroke.Parent = Switch
+        if ringFolder then
+            local rings = ringFolder:GetChildren()
+            
+            -- Sắp xếp thứ tự các vòng từ 1 đến vòng cuối cùng (nếu tên vòng là số)
+            table.sort(rings, function(a, b)
+                local numA = tonumber(a.Name:match("%d+")) or 0
+                local numB = tonumber(b.Name:match("%d+")) or 0
+                return numA < numB
+            end)
 
-	local toggled = false
-	Switch.MouseButton1Click:Connect(function()
-		toggled = not toggled
-		Switch.BackgroundColor3 = toggled and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(30, 30, 30)
-		callback(toggled)
-	end)
+            -- Vòng lặp đi qua từng vòng một
+            for _, ring in ipairs(rings) do
+                if not _G.AutoFarmRings then break end
+                
+                -- Xác định Part cần chạm
+                local touchPart = ring:IsA("BasePart") and ring or ring:FindFirstChildWhichIsA("BasePart")
+                
+                if touchPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local hrp = LocalPlayer.Character.HumanoidRootPart
+                    
+                    -- MẸO: Sử dụng firetouchinterest để kích hoạt va chạm từ xa mà không cần dịch chuyển
+                    if firetouchinterest then
+                        firetouchinterest(hrp, touchPart, 0) -- Bắt đầu chạm
+                        task.wait(0.02)
+                        firetouchinterest(hrp, touchPart, 1) -- Thả chạm out
+                    else
+                        -- Phương án dự phòng nếu Executor cùi không hỗ trợ firetouchinterest
+                        hrp.CFrame = touchPart.CFrame + Vector3.new(0, 2, 0)
+                    end
+                    
+                    task.wait(_G.DelayBetweenRings)
+                end
+            end
+            
+            -- Sau khi đi hết các vòng, đợi nhân vật hồi sinh hoặc reset để nhận phần thưởng lượt mới
+            task.wait(1)
+        else
+            -- Nếu game giấu thư mục vòng quá kỹ, script sẽ tự động tìm bất kỳ Part nào có tên chứa chữ "Ring"
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if _G.AutoFarmRings and obj:IsA("BasePart") and (obj.Name:lower():find("ring") or obj.Name:lower():find("stage")) then
+                    if firetouchinterest and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, obj, 0)
+                        task.wait(0.01)
+                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, obj, 1)
+                    end
+                    task.wait(0.1)
+                end
+            end
+            task.wait(2)
+        end
+    end
 end
 
-local function AddSlider(parentPage, text, min, max, default, callback)
-	local SliderFrame = Instance.new("Frame")
-	SliderFrame.Size = UDim2.new(0, 360, 0, 50)
-	SliderFrame.BackgroundTransparency = 1
-	SliderFrame.Parent = parentPage
-
-	local Label = Instance.new("TextLabel")
-	Label.Size = UDim2.new(0, 200, 0, 20)
-	Label.BackgroundTransparency = 1
-	Label.Font = Enum.Font.SourceSans
-	Label.Text = text
-	Label.TextColor3 = Color3.fromRGB(200, 200, 200)
-	Label.TextSize = 16
-	Label.TextXAlignment = Enum.TextXAlignment.Left
-	Label.Parent = SliderFrame
-
-	local ValueLabel = Instance.new("TextLabel")
-	ValueLabel.Size = UDim2.new(0, 50, 0, 20)
-	ValueLabel.Position = UDim2.new(1, -60, 0, 0)
-	ValueLabel.BackgroundTransparency = 1
-	ValueLabel.Font = Enum.Font.SourceSansBold
-	ValueLabel.Text = tostring(default)
-	ValueLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-	ValueLabel.TextSize = 16
-	ValueLabel.Parent = SliderFrame
-
-	local SliderBar = Instance.new("TextButton")
-	SliderBar.Size = UDim2.new(0, 340, 0, 6)
-	SliderBar.Position = UDim2.new(0, 10, 0, 30)
-	SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	SliderBar.Text = ""
-	SliderBar.Parent = SliderFrame
-
-	local SliderFill = Instance.new("Frame")
-	SliderFill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
-	SliderFill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-	SliderFill.BorderSizePixel = 0
-	SliderFill.Parent = SliderBar
-
-	local UserInputService = game:GetService("UserInputService")
-	local dragging = false
-
-	SliderBar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
-	end)
-
-	UserInputService.Input
+-- Thông báo kích hoạt thành công trên thanh F9 Console
+print("[Dragon Hub]: Auto Ring Farm đã được kích hoạt thành công!")
+task.spawn(startRingFarm)
