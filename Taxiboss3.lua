@@ -1,4 +1,4 @@
--- [[ TAXI BOSS PREMIUM HUB v4.0 - CODESYNC OPTIMIZED ]]
+-- [[ TAXI BOSS PREMIUM HUB v5.0 - ANTI-LAG & NPC FILTERED ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,14 +8,13 @@ local Camera = workspace.CurrentCamera
 -- ==================== HỆ THỐNG CẤU HÌNH BIẾN ====================
 local Config = {
     Farm = {
-        AutoPassenger = false,   -- Tự động đón khách
-        AutoDropOff = false,     -- Tự động trả khách
-        StatusText = "Sẵn sàng"  -- Trạng thái hiển thị trên Menu
+        AutoPassenger = false,   
+        AutoDropOff = false,     
+        MaxStars = 5,             -- MẶC ĐỊNH: Nhận khách từ 1 đến 5 sao (Có thể chỉnh trên UI)
     },
     Vehicle = {
         SpeedHack = false,       
         SpeedValue = 160,        
-        InfiniteNitro = false    
     }
 }
 
@@ -26,13 +25,12 @@ local TabFrames = {}
 local Locations = {
     ["Main Spawn (Trung Tâm)"] = Vector3.new(12, 5, -45),
     ["Cửa Hàng Mua Xe (Dealership)"] = Vector3.new(-240, 4, 180),
-    ["Xưởng Độ Xe (Upgrade Shop)"] = Vector3.new(450, 6, -320),
-    ["Khu Biệt Thự (Rich Area)"] = Vector3.new(800, 15, 600)
+    ["Xưởng Độ Xe (Upgrade Shop)"] = Vector3.new(450, 6, -320)
 }
 
--- ==================== KHỞI TẠO GIAO DIỆN MENU SANG TRỌNG ====================
+-- ==================== KHỞI TẠO GIAO DIỆN MENU NEON SANG TRỌNG ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TaxiBossUltimateHub"
+ScreenGui.Name = "TaxiBossV5Hub"
 ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
@@ -46,12 +44,9 @@ MainFrame.Active = true
 MainFrame.Draggable = true 
 MainFrame.Parent = ScreenGui
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 9)
-MainCorner.Parent = MainFrame
-
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 9)
 local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(255, 0, 120) -- Hồng Neon
+UIStroke.Color = Color3.fromRGB(255, 0, 120) -- Hồng Neon rực rỡ
 UIStroke.Thickness = 1.5
 UIStroke.Parent = MainFrame
 
@@ -61,28 +56,25 @@ TopBar.Size = UDim2.new(1, 0, 0, 40)
 TopBar.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
-
-local TopCorner = Instance.new("UICorner")
-TopCorner.CornerRadius = UDim.new(0, 9)
-TopCorner.Parent = TopBar
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 9)
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0.7, 0, 1, 0)
+Title.Size = UDim2.new(0.6, 0, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Taxi Boss Premium — v4.0 Fixed Edition"
+Title.Text = "Taxi Boss Premium — v5.0 Meticulous Edition"
 Title.TextColor3 = Color3.fromRGB(235, 235, 240)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 15
+Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
 
--- Dòng trạng thái hoạt động thực thời (Meticulous detail)
+-- Trạng thái hệ thống thực thời
 local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(0.4, 0, 0, 20)
-StatusLabel.Position = UDim2.new(0.55, -40, 0.5, -10)
+StatusLabel.Size = UDim2.new(0.35, 0, 0, 20)
+StatusLabel.Position = UDim2.new(0.6, -40, 0.5, -10)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Status: Chờ lệnh..."
+StatusLabel.Text = "Hệ thống: Chờ lệnh..."
 StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
 StatusLabel.Font = Enum.Font.SourceSansItalic
 StatusLabel.TextSize = 13
@@ -275,23 +267,24 @@ local function AddButton(tabFrame, text, callback)
     Btn.MouseButton1Click:Connect(callback)
 end
 
--- Khởi tạo các phân mục chính
+-- Khởi tạo tab nội dung
 local FarmTab = CreateTab("Tự Động Cày (Farm)", 0)
 local VehicleTab = CreateTab("Độ Xe (Vehicle)", 1)
 local TeleportTab = CreateTab("Dịch Chuyển", 2)
 
 AddToggle(FarmTab, "Tự Động Đón Khách (Auto Pick)", Config.Farm.AutoPassenger, function(s) Config.Farm.AutoPassenger = s end)
+AddSlider(FarmTab, "Số Sao Xe Có Thể Nhận", 1, 5, Config.Farm.MaxStars, function(v) Config.Farm.MaxStars = v end)
 AddToggle(FarmTab, "Tự Động Trả Khách (Auto Drop)", Config.Farm.AutoDropOff, function(s) Config.Farm.AutoDropOff = s end)
 
 AddToggle(VehicleTab, "Bật Hack Tốc Độ Xe", Config.Vehicle.SpeedHack, function(s) Config.Vehicle.SpeedHack = s end)
-AddSlider(VehicleTab, "Tốc Độ Đẩy Thuyền", 50, 300, Config.Vehicle.SpeedValue, function(v) Config.Vehicle.SpeedValue = v end)
+AddSlider(VehicleTab, "Tốc Độ Tối Đa", 50, 300, Config.Vehicle.SpeedValue, function(v) Config.Vehicle.SpeedValue = v end)
 
 for locName, coords in pairs(Locations) do
     AddButton(TeleportTab, "Đến " .. locName, function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum and hum.SeatPart and hum.SeatPart:IsA("VehicleSeat") then
-                hum.SeatPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                hum.SeatPart.AssemblyLinearVelocity = Vector3.new(0,0,0)
                 hum.SeatPart.CFrame = CFrame.new(coords + Vector3.new(0, 3, 0))
             else
                 LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(coords)
@@ -300,61 +293,84 @@ for locName, coords in pairs(Locations) do
     end)
 end
 
--- ==================== THUẬT TOÁN QUÈT ĐA TẦNG & TỰ ĐỘNG CÀY CHUẨN XÁC ====================
+-- ==================== CHỨC NĂNG PHÂN TÍCH SAO & LỌC NPC TRÁNH ĐỂ BÁN XE ====================
 
--- Hàm tìm kiếm thực thể Khách Hàng (NPC) dựa trên UI hệ thống Taxi Boss cấp cho họ
-local function FindValidCustomer()
-    -- Cách 1: Tìm kiếm trong thư mục chứa Passenger chuyên dụng của Taxi Boss
+-- Hàm đọc số sao của khách hàng từ BillboardGui
+local function GetPassengerStars(npcModel)
+    local bbg = npcModel:FindFirstChildOfClass("BillboardGui")
+    if bbg then
+        for _, obj in ipairs(bbg:GetDescendants()) do
+            if obj:IsA("TextLabel") then
+                local text = obj.Text
+                local number = text:match("%d") -- Tìm số nguyên (Ví dụ: "3 Stars" hoặc "3★")
+                if number then return tonumber(number) end
+                
+                -- Đo lường bằng cách đếm ký tự biểu tượng ngôi sao
+                local _, countStar1 = text:gsub("⭐", "")
+                if countStar1 > 0 then return countStar1 end
+                local _, countStar2 = text:gsub("★", "")
+                if countStar2 > 0 then return countStar2 end
+            end
+        end
+    end
+    return 1 -- Mặc định trả về khách 1 sao nếu không tìm thấy dữ liệu chữ công khai
+end
+
+-- Hàm tìm kiếm khách chuẩn trên phố
+local function FindGenuineCustomer()
     local folders = {workspace:FindFirstChild("NPCs"), workspace:FindFirstChild("Customers"), workspace:FindFirstChild("Passengers")}
-    for _, f in pairs(folders) do
-        if f then
-            for _, npc in ipairs(f:GetChildren()) do
+    local blacklist = {"dealer", "shop", "garage", "mechanic", "worker", "spawn", "leaderboard", "custom", "tycoon"}
+
+    for _, folder in pairs(folders) do
+        if folder then
+            for _, npc in ipairs(folder:GetChildren()) do
                 local hrp = npc:FindFirstChild("HumanoidRootPart")
-                local hum = npc:FindFirstChildOfClass("Humanoid")
-                -- Nếu tìm thấy NPC có bảng điểm đánh giá sao trên đầu (Đặc trưng Taxi Boss)
-                if hrp and (npc:FindFirstChildOfClass("BillboardGui") or npc:FindFirstChild("Head")) then
-                    if not npc:GetAttribute("Taken") then -- Khách chưa bị ai đón
-                        return hrp
+                if hrp then
+                    -- Kiểm tra xem tên NPC hoặc thư mục cha có nằm trong danh sách đen không
+                    local isBlacklisted = false
+                    local nameLower = npc.Name:lower()
+                    for _, word in pairs(blacklist) do
+                        if nameLower:find(word) then isBlacklisted = true break end
+                    end
+
+                    if not isBlacklisted then
+                        -- Phân tích số sao của khách hàng xem xe hiện tại có vừa tầm không
+                        local starRating = GetPassengerStars(npc)
+                        if starRating <= Config.Farm.MaxStars then
+                            return hrp
+                        end
                     end
                 end
             end
         end
     end
-    
-    -- Cách 2: Quét toàn bộ Workspace tìm các Model chứa UI hiển thị Đón Khách
-    for _, v in ipairs(workspace:GetChildren()) do
-        if v:IsA("Model") and (v.Name:lower():find("customer") or v:FindFirstChild("CustomerGui") or v:FindFirstChild("Rank")) then
-            local hrp = v:FindFirstChild("HumanoidRootPart")
-            if hrp then return hrp end
-        end
-    end
     return nil
 end
 
--- Hàm tìm kiếm Điểm Trả Khách (Vòng tròn phát sáng chỉ định đích đến của game cấp cho bạn)
+-- Hàm tìm điểm checkpoint trả khách chính xác bằng liên kết điều hướng (Navigation Engine)
 local function FindDropOffZone()
-    -- Tìm trong thư mục nhiệm vụ cá nhân của người chơi
-    local missions = workspace:FindFirstChild("Missions") or workspace:FindFirstChild("ActiveMissions")
-    if missions then
-        local myMission = missions:FindFirstChild(LocalPlayer.Name)
-        if myMission then
-            local part = myMission:FindFirstChild("Destination") or myMission:FindFirstChildOfClass("BasePart")
+    -- Cách 1: Tìm vòng sáng nhiệm vụ cá nhân của người chơi tạo ra
+    local missionFolder = workspace:FindFirstChild("Missions")
+    if missionFolder then
+        local pMission = missionFolder:FindFirstChild(LocalPlayer.Name)
+        if pMission then
+            local part = pMission:FindFirstChild("Destination") or pMission:FindFirstChildOfClass("BasePart")
             if part then return part end
         end
     end
 
-    -- Quét diện rộng tìm vòng sáng checkpoint mục tiêu
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") and v.Transparency < 1 and v.CanCollide == false then
-            if v.Name == "Destination" or v.Name == "DropOff" or v.Name:find("Target") or v.Name == "GiveIn" then
-                return v
+    -- Cách 2: Quét các mục tiêu phát sáng hình tròn/trụ có bộ truyền va chạm mờ (Trigger Zone)
+    for _, item in ipairs(workspace:GetDescendants()) do
+        if item:IsA("BasePart") and item.Transparency < 1 and item.CanCollide == false then
+            if item.Name == "Destination" or item.Name == "DropOff" or item.Name == "TaxiDropOff" or item.Name == "GiveIn" then
+                return item
             end
         end
     end
     return nil
 end
 
--- ENGINE CHẠY NGẦM XỬ LÝ AUTO FARM (Đã thêm cơ chế khóa vận tốc và đồng bộ trễ)
+-- ==================== HỆ THỐNG ENGINE CHẠY NGẦM AUTO FARM V5.0 ====================
 task.spawn(function()
     while true do
         task.wait(0.1)
@@ -363,47 +379,45 @@ task.spawn(function()
                 local hum = LocalPlayer.Character.Humanoid
                 local seat = hum.SeatPart
                 
-                -- Chỉ thực hiện farm khi bạn đang thực sự ngồi trên ghế lái xe taxi
                 if seat and seat:IsA("VehicleSeat") then
                     
-                    -- TÁC VỤ 1: TỰ ĐỘNG ĐÓN KHÁCH
+                    -- HÀNH ĐỘNG 1: TỰ ĐỘNG ĐÓN KHÁCH THEO SAO SÀNG LỌC
                     if Config.Farm.AutoPassenger then
-                        StatusLabel.Text = "Status: Đang tìm khách..."
-                        local targetCustomer = FindValidCustomer()
-                        if targetCustomer then
-                            StatusLabel.Text = "Status: Đang đón khách!"
-                            -- Triệt tiêu lực quán tính tránh lật xe khi dịch chuyển
+                        StatusLabel.Text = "Hệ thống: Đang quét khách hợp lệ..."
+                        local customerRoot = FindGenuineCustomer()
+                        if customerRoot then
+                            StatusLabel.Text = "Hệ thống: Phát hiện! Đang đón khách..."
                             seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
                             seat.AssemblyAngularVelocity = Vector3.new(0,0,0)
                             
-                            -- Đưa xe đến sát vị trí của khách hàng
-                            seat.CFrame = targetCustomer.CFrame * CFrame.new(0, 0, 3)
-                            
-                            -- [CỰC KỲ QUAN TRỌNG]: Đợi 0.4 giây để server đồng bộ hành động khách bước vào hàng ghế sau
-                            task.wait(0.4)
+                            -- Dịch chuyển xe ra phía sau vị trí khách đứng 3 stud để kích hoạt vùng đón khách
+                            seat.CFrame = customerRoot.CFrame * CFrame.new(0, 0, 3)
+                            task.wait(0.5) -- Chờ nửa giây để game nạp khách lên xe ổn định
                         end
                     end
                     
-                    -- TÁC VỤ 2: TỰ ĐỘNG TRẢ KHÁCH
+                    -- HÀNH ĐỘNG 2: TỰ ĐỘNG TRẢ KHÁCH (CHỐNG NGHẼN SERVER)
                     if Config.Farm.AutoDropOff then
-                        StatusLabel.Text = "Status: Kiểm tra điểm trả..."
+                        StatusLabel.Text = "Hệ thống: Kiểm tra điểm đích..."
                         local dropZone = FindDropOffZone()
                         if dropZone then
-                            StatusLabel.Text = "Status: Đang trả khách nhanh!"
+                            StatusLabel.Text = "Hệ thống: Đến đích! Đang xử lý tiền..."
+                            
+                            -- Đóng băng hoàn toàn lực quán tính để xe đứng im tuyệt đối trong vòng tròn trả khách
                             seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
                             seat.AssemblyAngularVelocity = Vector3.new(0,0,0)
                             
-                            -- Đưa thẳng xe vào tâm điểm trả hàng nhận tiền thưởng
-                            seat.CFrame = dropZone.CFrame
+                            -- Khóa chặt CFrame xe trùng khớp với điểm đích
+                            seat.CFrame = dropZone.CFrame + Vector3.new(0, 1.5, 0)
                             
-                            -- Đợi một chút để game kịp cộng tiền mặt vào tài khoản của bạn
-                            task.wait(0.5)
+                            -- [YẾU TỐ QUAN TRỌNG NHẤT]: Tạm dừng vòng lặp 2 giây để Server kịp xử lý thanh toán và xóa Checkpoint
+                            task.wait(2.0)
                         end
                     end
                     
                 else
                     if Config.Farm.AutoPassenger or Config.Farm.AutoDropOff then
-                        StatusLabel.Text = "Status: Hãy ngồi vào xe Taxi!"
+                        StatusLabel.Text = "Hệ thống: Hãy ngồi lên xe Taxi!"
                     end
                 end
             end
@@ -411,7 +425,7 @@ task.spawn(function()
     end
 end)
 
--- Vòng lặp gia tốc xe (Car Speed Hack)
+-- Vòng lặp tối ưu gia tốc xe (Speed Hack)
 RunService.RenderStepped:Connect(function()
     if Config.Vehicle.SpeedHack and LocalPlayer.Character then
         local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
