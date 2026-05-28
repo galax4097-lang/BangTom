@@ -1,65 +1,48 @@
--- Tải thư viện Kavo GUI
+-- Tải thư viện giao diện Kavo UI (Đảm bảo máy tính có kết nối mạng)
 local KavoUi = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
--- Tạo cửa sổ Menu chính (Theme: Midnight - Đen huyền bí)
-local Window = KavoUi.CreateLib("Taxi Boss Hub 🚖", "Midnight")
+local Window = KavoUi.CreateLib("Taxi Boss Studio Hub 🚖", "Midnight")
+
+-- Lấy dịch vụ mạng kết nối Client - Server
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TaxiEvent = ReplicatedStorage:WaitForChild("TaxiEvent")
+local Player = game.Players.LocalPlayer
 
 -- ==========================================
--- TAB 1: AUTO FARM (Tự động hóa)
+-- TAB 1: MAIN FUNCTION
 -- ==========================================
-local MainTab = Window:NewTab("Auto Farm")
-local MainSection = MainTab:NewSection("Kiếm Tiền Tự Động")
+local MainTab = Window:NewTab("Main Hub")
+local MainSection = MainTab:NewSection("Chức Năng Chính")
 
-MainSection:NewToggle("Auto Get Passengers", "Tự động nhận khách hàng gần nhất", function(state)
-    if state then
-        print("Đang bật: Auto Nhận Khách")
-        -- Chèn code vòng lặp (while state do) để tìm và nhận khách tại đây
-    else
-        print("Đang tắt: Auto Nhận Khách")
-    end
+-- Nút Dịch Chuyển đến Garage 1
+MainSection:NewButton("Teleport to Garage 1", "Dịch chuyển xe và người đến Garage 1", function()
+    -- Tọa độ ví dụ cho Garage 1 (Bạn có thể tự đổi số lại cho đúng vị trí game của bạn)
+    local TargetPosition = Vector3.new(150, 12, -300) 
+    TaxiEvent:FireServer("Teleport", TargetPosition)
 end)
 
-MainSection:NewToggle("Auto Teleport Deliver", "Tự động dịch chuyển đến điểm trả khách", function(state)
-    if state then
-        print("Đang bật: Auto Trả Khách Siêu Tốc")
-        -- Chèn code kiểm tra nếu có khách trên xe thì TP đến Destination
-    else
-        print("Đang tắt: Auto Trả Khách Siêu Tốc")
-    end
-end)
-
--- ==========================================
--- TAB 2: VEHICLE (Cấu hình Xe)
--- ==========================================
-local VehicleTab = Window:NewTab("Vehicle")
-local VehicleSection = VehicleTab:NewSection("Nâng Cấp Chỉ Số Xe")
-
-VehicleSection:NewSlider("Vehicle Speed", "Chỉnh tốc độ tối đa của xe", 500, 100, function(value)
-    print("Tốc độ xe đã chỉnh thành: " .. value)
-    -- Mẹo: Bạn cần tìm thư mục xe của Player trong workspace và thay đổi MaxSpeed của Tuning/Chassis
-end)
-
-VehicleSection:NewToggle("Infinite Nitro", "Sử dụng Nitro vô hạn", function(state)
-    if state then
-        print("Đang bật: Vô hạn Nitro")
-    else
-        print("Đang tắt: Vô hạn Nitro")
-    end
+-- Nút Dịch Chuyển đến Showroom Xe
+MainSection:NewButton("Teleport to Showroom", "Dịch chuyển xe và người đến Showroom", function()
+    -- Tọa độ ví dụ cho Showroom
+    local TargetPosition = Vector3.new(-500, 15, 1200) 
+    TaxiEvent:FireServer("Teleport", TargetPosition)
 end)
 
 -- ==========================================
--- TAB 3: PLAYER & TELEPORT (Người chơi)
+-- TAB 2: PLAYER SETTINGS
 -- ==========================================
 local PlayerTab = Window:NewTab("Player")
-local PlayerSection = PlayerTab:NewSection("Trợ Giúp Người Chơi")
+local PlayerSection = PlayerTab:NewSection("Chỉnh Chỉ Số Nhân Vật")
 
-PlayerSection:NewSlider("Walkspeed", "Chỉnh tốc độ chạy bộ", 250, 16, function(v)
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v
+-- Thanh trượt thay đổi tốc độ chạy bộ của người chơi
+PlayerSection:NewSlider("Walkspeed", "Thay đổi tốc độ chạy (Mặc định: 16)", 150, 16, function(value)
+    if Player.Character and Player.Character:FindFirstChild("Humanoid") then
+        Player.Character.Humanoid.WalkSpeed = value
+    end
 end)
 
-PlayerSection:NewButton("Teleport to Showroom", "Dịch chuyển đến cửa hàng bán xe", function()
-    local player = game.Players.LocalPlayer
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        -- Thay Vector3 dưới đây bằng tọa độ chính xác của Showroom trong game của bạn
-        player.Character.HumanoidRootPart.CFrame = CFrame.new(100, 10, 200) 
+-- Thanh trượt thay đổi sức nhảy
+PlayerSection:NewSlider("Jump Power", "Thay đổi sức nhảy (Mặc định: 50)", 200, 50, function(value)
+    if Player.Character and Player.Character:FindFirstChild("Humanoid") then
+        Player.Character.Humanoid.JumpPower = value
     end
 end)
