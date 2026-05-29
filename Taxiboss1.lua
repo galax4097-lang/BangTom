@@ -1,15 +1,15 @@
--- [[ TAXI BOSS FLY CAR ENGINE — v9.0 NEON GUI ]]
+-- [[ TAXI BOSS ROCK-SOLID FLY ENGINE — v10.0 FIX LOẢNG CHOẢNG ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- ==================== CẤU HÌNH HỆ THỐNG FLY ====================
+-- ==================== CẤU HÌNH ĐỘNG CƠ BAY v10.0 ====================
 local Config = {
     Fly = {
         Enabled = false,
-        Speed = 100,
+        Speed = 120,
     }
 }
 
@@ -17,13 +17,12 @@ local MenuVisible = true
 local IsMinimized = false
 local TabFrames = {}
 
--- Biến phục vụ cơ chế bay vật lý
 local BodyVelocityInstance = nil
 local BodyGyroInstance = nil
 
--- ==================== KHỞI TẠO GIAO DIỆN PREMIUM NEON GUI ====================
+-- ==================== GIAO DIỆN HỒNG NEON CHUẨN ĐẸP ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TaxiBossV9FlyCar"
+ScreenGui.Name = "TaxiBossV10SolidFly"
 ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
@@ -39,7 +38,7 @@ MainFrame.Parent = ScreenGui
 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(255, 0, 120) -- Viền Hồng Neon quen thuộc
+UIStroke.Color = Color3.fromRGB(255, 0, 120) -- Viền Hồng Neon đặc trưng
 UIStroke.Thickness = 1.6
 UIStroke.Parent = MainFrame
 
@@ -54,7 +53,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0.6, 0, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Taxi Boss Fly Hub — v9.0 Chống Lật Đất"
+Title.Text = "Taxi Boss Anti-Wobble Fly — v10.0 Khóa Cứng"
 Title.TextColor3 = Color3.fromRGB(240, 240, 245)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
@@ -65,7 +64,7 @@ local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(0.35, 0, 0, 20)
 StatusLabel.Position = UDim2.new(0.65, -45, 0.5, -10)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Động cơ bay: TẮT"
+StatusLabel.Text = "Trạng thái: Đang tắt bay"
 StatusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
 StatusLabel.Font = Enum.Font.SourceSansItalic
 StatusLabel.TextSize = 13
@@ -108,7 +107,6 @@ MinimizeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Phím tắt ẩn/hiển thị Menu Gui (Nhấn Right Control hoặc Insert)
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightControl or input.KeyCode == Enum.KeyCode.Insert then
         MenuVisible = not MenuVisible
@@ -116,7 +114,7 @@ UserInputService.InputBegan:Connect(function(input)
     end
 end)
 
--- ==================== HÀM DỰNG THÀNH PHẦN MENU ====================
+-- ==================== HÀM TẠO THÀNH PHẦN GUI ====================
 local function CreateTab(tabName, order)
     local TabBtn = Instance.new("TextButton")
     TabBtn.Size = UDim2.new(0, 120, 0, 35)
@@ -157,175 +155,4 @@ local function AddToggle(tabFrame, text, default, callback)
     Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 6)
 
     local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.7, 0, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(210, 210, 215)
-    Label.Font = Enum.Font.SourceSans
-    Label.TextSize = 14
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Row
-
-    local Switch = Instance.new("TextButton")
-    Switch.Size = UDim2.new(0, 42, 0, 20)
-    Switch.Position = UDim2.new(1, -52, 0, 9)
-    Switch.Text = ""
-    Switch.Parent = Row
-    Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
-
-    local State = default
-    local function updateVisual() Switch.BackgroundColor3 = State and Color3.fromRGB(255, 0, 120) or Color3.fromRGB(60, 60, 65) end
-    updateVisual()
-
-    Switch.MouseButton1Click:Connect(function() State = not State updateVisual() callback(State) end)
-end
-
-local function AddSlider(tabFrame, text, min, max, default, callback)
-    local Row = Instance.new("Frame")
-    Row.Size = UDim2.new(1, -10, 0, 48)
-    Row.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-    Row.BorderSizePixel = 0
-    Row.Parent = tabFrame
-    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 6)
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.6, 0, 0, 22)
-    Label.Position = UDim2.new(0, 10, 0, 2)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(210, 210, 215)
-    Label.Font = Enum.Font.SourceSans
-    Label.TextSize = 14
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Row
-
-    local ValueLabel = Instance.new("TextLabel")
-    ValueLabel.Size = UDim2.new(0.3, 0, 0, 22)
-    ValueLabel.Position = UDim2.new(0.7, -10, 0, 2)
-    ValueLabel.BackgroundTransparency = 1
-    ValueLabel.Text = tostring(default) .. " MPH"
-    ValueLabel.TextColor3 = Color3.fromRGB(255, 0, 120)
-    ValueLabel.Font = Enum.Font.SourceSansBold
-    ValueLabel.TextSize = 14
-    ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
-    ValueLabel.Parent = Row
-
-    local SliderBar = Instance.new("TextButton")
-    SliderBar.Size = UDim2.new(1, -20, 0, 4)
-    SliderBar.Position = UDim2.new(0, 10, 0, 30)
-    SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-    SliderBar.Text = ""
-    SliderBar.Parent = Row
-
-    local Fill = Instance.new("Frame")
-    Fill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
-    Fill.BackgroundColor3 = Color3.fromRGB(255, 0, 120)
-    Fill.BorderSizePixel = 0
-    Fill.Parent = SliderBar
-
-    local function updateSlider(input)
-        local totalWidth = SliderBar.AbsoluteSize.X
-        local relX = math.clamp(input.Position.X - SliderBar.AbsolutePosition.X, 0, totalWidth)
-        local percentage = relX / totalWidth
-        local value = math.floor(min + (max - min) * percentage)
-        ValueLabel.Text = tostring(value) .. " MPH"
-        Fill.Size = UDim2.new(percentage, 0, 1, 0)
-        callback(value)
-    end
-
-    local sliding = false
-    SliderBar.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = true updateSlider(input) end end)
-    UserInputService.InputChanged:Connect(function(input) if sliding and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end end)
-    UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end end)
-end
-
--- Dựng giao diện Tab điều khiển bay
-local MainTab = CreateTab("Động Cơ Bay", 0)
-
-AddToggle(MainTab, "Kích Hoạt Bay Xe (Fly Car)", Config.Fly.Enabled, function(s) 
-    Config.Fly.Enabled = s 
-    if s then
-        StatusLabel.Text = "Động cơ bay: SẴN SÀNG"
-        StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 120)
-    else
-        StatusLabel.Text = "Động cơ bay: TẮT"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-        -- Dọn dẹp bộ điều khiển lực vật lý khi tắt bay
-        if BodyVelocityInstance then BodyVelocityInstance:Destroy() BodyVelocityInstance = nil end
-        if BodyGyroInstance then BodyGyroInstance:Destroy() BodyGyroInstance = nil end
-    end
-end)
-
-AddSlider(MainTab, "Cấu Hình Tốc Độ Bay", 30, 300, Config.Fly.Speed, function(v) 
-    Config.Fly.Speed = v 
-end)
-
--- ==================== ENGINE BẢO TRÌ VẬT LÝ FLY CAR HỒNG TÂM ====================
-
-RunService.Stepped:Connect(function()
-    if Config.Fly.Enabled and LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then
-            local seat = humanoid.SeatPart
-            
-            -- Khởi tạo lực đẩy nếu chưa tồn tại trong ghế lái của xe
-            if not BodyVelocityInstance or BodyVelocityInstance.Parent ~= seat then
-                BodyVelocityInstance = Instance.new("BodyVelocity")
-                BodyVelocityInstance.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                BodyVelocityInstance.Velocity = Vector3.new(0, 0, 0)
-                BodyVelocityInstance.Parent = seat
-            end
-            
-            -- Khởi tạo cân bằng góc nghiêng chống lật cắm đầu xuống đất
-            if not BodyGyroInstance or BodyGyroInstance.Parent ~= seat then
-                BodyGyroInstance = Instance.new("BodyGyro")
-                BodyGyroInstance.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                BodyGyroInstance.D = 500  -- Độ mượt giảm chấn
-                BodyGyroInstance.P = 10000 -- Lực giữ cân bằng góc xoay
-                BodyGyroInstance.CFrame = seat.CFrame
-                BodyGyroInstance.Parent = seat
-            end
-            
-            -- Tính toán hướng bay dựa trên WASD + Phím chức năng và Góc nhìn Camera
-            local direction = Vector3.new(0, 0, 0)
-            
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                direction = direction + Camera.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                direction = direction - Camera.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                direction = direction - Camera.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                direction = direction + Camera.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                direction = direction + Vector3.new(0, 1, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                direction = direction - Vector3.new(0, 1, 0)
-            end
-            
-            -- Cập nhật vận tốc bay và khóa góc xoay xe phẳng tuyệt đối 180 độ theo hướng nhìn ngang
-            if direction.Magnitude > 0 then
-                BodyVelocityInstance.Velocity = direction.Unit * Config.Fly.Speed
-            else
-                BodyVelocityInstance.Velocity = Vector3.new(0, 0, 0) -- Đứng im trên không trung nếu thả phím
-            end
-            
-            -- Giữ xe thăng bằng song song mặt đất, đầu xe xoay theo góc quay ngang của camera
-            local camLook = Camera.CFrame.LookVector
-            local flatLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
-            if flatLook.Magnitude > 0 then
-                BodyGyroInstance.CFrame = CFrame.lookAt(seat.Position, seat.Position + flatLook)
-            end
-        else
-            -- Nếu người chơi nhảy khỏi xe, tạm thời tắt lực đẩy để xe không bị bay mất
-            if BodyVelocityInstance then BodyVelocityInstance:Destroy() BodyVelocityInstance = nil end
-            if BodyGyroInstance then BodyGyroInstance:Destroy() BodyGyroInstance = nil end
-        end
-    end
-end)
+    Label.Size =
