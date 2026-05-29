@@ -1,11 +1,11 @@
--- [[ TAXI BOSS ROCK-SOLID FLY ENGINE — v10.0 FIX LOẢNG CHOẢNG ]]
+-- [[ TAXI BOSS FLY ENGINE BYPASS — v11.0 FIX HOÀN TOÀN ẨN MENU ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- ==================== CẤU HÌNH ĐỘNG CƠ BAY v10.0 ====================
+-- ==================== CẤU HÌNH ĐỘNG CƠ v11.0 ====================
 local Config = {
     Fly = {
         Enabled = false,
@@ -20,13 +20,27 @@ local TabFrames = {}
 local BodyVelocityInstance = nil
 local BodyGyroInstance = nil
 
--- ==================== GIAO DIỆN HỒNG NEON CHUẨN ĐẸP ====================
+-- ==================== GIẢI PHÁP SỬA LỖI ẨN MENU (GETHUI BYPASS) ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TaxiBossV10SolidFly"
+ScreenGui.Name = "TaxiBossV11BypassHub"
 ScreenGui.ResetOnSpawn = false
-pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
-if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
+-- Thuật toán tìm phân vùng hiển thị an toàn không thể bị chặn
+local function ApplySafeParent()
+    if gethui then 
+        ScreenGui.Parent = gethui() -- Ưu tiên số 1 cho các Executor đời mới
+    else
+        local success, coreGui = pcall(function() return game:GetService("CoreGui") end)
+        if success and coreGui then
+            ScreenGui.Parent = coreGui
+        else
+            ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") -- Phương án dự phòng cuối cùng
+        end
+    end
+end
+ApplySafeParent()
+
+-- ==================== DỰNG GIAO DIỆN HỒNG NEON CHUẨN ĐẸP ====================
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 520, 0, 320)
 MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
@@ -34,11 +48,12 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 17)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true 
+MainFrame.Visible = true
 MainFrame.Parent = ScreenGui
 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(255, 0, 120) -- Viền Hồng Neon đặc trưng
+UIStroke.Color = Color3.fromRGB(255, 0, 120) -- Viền Neon đặc trưng
 UIStroke.Thickness = 1.6
 UIStroke.Parent = MainFrame
 
@@ -53,7 +68,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0.6, 0, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Taxi Boss Anti-Wobble Fly — v10.0 Khóa Cứng"
+Title.Text = "Taxi Boss Anti-Wobble Fly — v11.0 Fix GUI"
 Title.TextColor3 = Color3.fromRGB(240, 240, 245)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
@@ -107,6 +122,7 @@ MinimizeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Phím tắt ẩn/hiện nhanh Menu bằng phím Right Control hoặc phím Insert
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightControl or input.KeyCode == Enum.KeyCode.Insert then
         MenuVisible = not MenuVisible
@@ -148,11 +164,4 @@ end
 
 local function AddToggle(tabFrame, text, default, callback)
     local Row = Instance.new("Frame")
-    Row.Size = UDim2.new(1, -10, 0, 38)
-    Row.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-    Row.BorderSizePixel = 0
-    Row.Parent = tabFrame
-    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 6)
-
-    local Label = Instance.new("TextLabel")
-    Label.Size =
+    Row.Size = UDim2.new(1, -10, 0
