@@ -1,46 +1,40 @@
--- [[ TAXI BOSS FLY ENGINE BYPASS — v11.0 FIX HOÀN TOÀN ẨN MENU ]]
+-- [[ SAIL YOUR BOAT HUB — v12.0 AUTO SAIL UPDATE ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 
--- ==================== CẤU HÌNH ĐỘNG CƠ v11.0 ====================
+-- ==================== CẤU HÌNH TỰ ĐỘNG v12.0 ====================
 local Config = {
-    Fly = {
-        Enabled = false,
-        Speed = 120,
-    }
+    AutoSail = false,
+    SailSpeed = 100,
+    AntiFlip = true
 }
 
 local MenuVisible = true
 local IsMinimized = false
 local TabFrames = {}
 
-local BodyVelocityInstance = nil
-local BodyGyroInstance = nil
-
--- ==================== GIẢI PHÁP SỬA LỖI ẨN MENU (GETHUI BYPASS) ====================
+-- ==================== GETHUI BYPASS (HIỂN THỊ TUYỆT ĐỐI) ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TaxiBossV11BypassHub"
+ScreenGui.Name = "SailYourBoatV12Hub"
 ScreenGui.ResetOnSpawn = false
 
--- Thuật toán tìm phân vùng hiển thị an toàn không thể bị chặn
 local function ApplySafeParent()
     if gethui then 
-        ScreenGui.Parent = gethui() -- Ưu tiên số 1 cho các Executor đời mới
+        ScreenGui.Parent = gethui()
     else
         local success, coreGui = pcall(function() return game:GetService("CoreGui") end)
         if success and coreGui then
             ScreenGui.Parent = coreGui
         else
-            ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") -- Phương án dự phòng cuối cùng
+            ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
         end
     end
 end
 ApplySafeParent()
 
--- ==================== DỰNG GIAO DIỆN HỒNG NEON CHUẨN ĐẸP ====================
+-- ==================== GIAO DIỆN HỒNG NEON CHUẨN ĐẸP ====================
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 520, 0, 320)
 MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
@@ -48,12 +42,11 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 17)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true 
-MainFrame.Visible = true
 MainFrame.Parent = ScreenGui
 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(255, 0, 120) -- Viền Neon đặc trưng
+UIStroke.Color = Color3.fromRGB(255, 0, 120) -- Màu hồng Neon đặc trưng
 UIStroke.Thickness = 1.6
 UIStroke.Parent = MainFrame
 
@@ -68,7 +61,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0.6, 0, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Taxi Boss Anti-Wobble Fly — v11.0 Fix GUI"
+Title.Text = "Sail Your Boat Hub — v12.0 Auto Sail"
 Title.TextColor3 = Color3.fromRGB(240, 240, 245)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
@@ -79,7 +72,7 @@ local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(0.35, 0, 0, 20)
 StatusLabel.Position = UDim2.new(0.65, -45, 0.5, -10)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Trạng thái: Đang tắt bay"
+StatusLabel.Text = "Auto Sail: ĐANG TẮT"
 StatusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
 StatusLabel.Font = Enum.Font.SourceSansItalic
 StatusLabel.TextSize = 13
@@ -122,7 +115,7 @@ MinimizeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Phím tắt ẩn/hiện nhanh Menu bằng phím Right Control hoặc phím Insert
+-- Phím tắt ẩn hiện nhanh Menu (Bấm RightControl hoặc Insert)
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightControl or input.KeyCode == Enum.KeyCode.Insert then
         MenuVisible = not MenuVisible
@@ -218,7 +211,7 @@ local function AddSlider(tabFrame, text, min, max, default, callback)
     ValueLabel.Size = UDim2.new(0.3, 0, 0, 22)
     ValueLabel.Position = UDim2.new(0.7, -10, 0, 2)
     ValueLabel.BackgroundTransparency = 1
-    ValueLabel.Text = tostring(default) .. " MPH"
+    ValueLabel.Text = tostring(default) .. " SPD"
     ValueLabel.TextColor3 = Color3.fromRGB(255, 0, 120)
     ValueLabel.Font = Enum.Font.SourceSansBold
     ValueLabel.TextSize = 14
@@ -243,7 +236,7 @@ local function AddSlider(tabFrame, text, min, max, default, callback)
         local relX = math.clamp(input.Position.X - SliderBar.AbsolutePosition.X, 0, totalWidth)
         local percentage = relX / totalWidth
         local value = math.floor(min + (max - min) * percentage)
-        ValueLabel.Text = tostring(value) .. " MPH"
+        ValueLabel.Text = tostring(value) .. " SPD"
         Fill.Size = UDim2.new(percentage, 0, 1, 0)
         callback(value)
     end
@@ -254,95 +247,53 @@ local function AddSlider(tabFrame, text, min, max, default, callback)
     UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end end)
 end
 
-local MainTab = CreateTab("Động Cơ Bay", 0)
+-- ==================== CÀI ĐẶT CÁC TÍNH NĂNG KHÓA HỌC ====================
+local BoatTab = CreateTab("Lướt Thuyền", 0)
 
-AddToggle(MainTab, "Kích Hoạt Bay Xe (Fly Car)", Config.Fly.Enabled, function(s) 
-    Config.Fly.Enabled = s 
+AddToggle(BoatTab, "Tự Động Lướt Thuyền (Auto Sail)", Config.AutoSail, function(s)
+    Config.AutoSail = s
     if s then
-        StatusLabel.Text = "Động cơ bay: KHÓA CỨNG"
+        StatusLabel.Text = "Auto Sail: ĐANG CHẠY"
         StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 120)
     else
-        StatusLabel.Text = "Động cơ bay: ĐANG TẮT"
+        StatusLabel.Text = "Auto Sail: ĐANG TẮT"
         StatusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-        if BodyVelocityInstance then BodyVelocityInstance:Destroy() BodyVelocityInstance = nil end
-        if BodyGyroInstance then BodyGyroInstance:Destroy() BodyGyroInstance = nil end
     end
 end)
 
-AddSlider(MainTab, "Tốc Độ Bay Siêu Cấp", 40, 350, Config.Fly.Speed, function(v) 
-    Config.Fly.Speed = v 
+AddSlider(BoatTab, "Tốc Độ Lướt Tự Động", 20, 300, Config.SailSpeed, function(v)
+    Config.SailSpeed = v
 end)
 
--- ==================== ENGINE KHÓA VẬT LÝ VỮNG CHẮC (ANTI-WOBBLE) ====================
+AddToggle(BoatTab, "Khóa Cân Bằng Thuyền (Anti-Flip)", Config.AntiFlip, function(s)
+    Config.AntiFlip = s
+end)
 
-RunService.RenderStepped:Connect(function()
-    if Config.Fly.Enabled and LocalPlayer.Character then
+-- ==================== ENGINE VẬT LÝ LƯỚT THUYỀN TỰ ĐỘNG ====================
+RunService.Heartbeat:Connect(function()
+    if Config.AutoSail and LocalPlayer.Character then
         local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        
+        -- Kiểm tra xem nhân vật có đang ngồi trên ghế điều khiển thuyền không
         if humanoid and humanoid.SeatPart and humanoid.SeatPart:IsA("VehicleSeat") then
             local seat = humanoid.SeatPart
             
-            -- Khóa cứng vận tốc góc để triệt tiêu mọi chuyển động loảng choảng từ game gốc
-            seat.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            -- Tác động lực đẩy tịnh tiến dọc theo hướng mũi thuyền (LookVector)
+            seat.AssemblyLinearVelocity = seat.CFrame.LookVector * Config.SailSpeed
             
-            if not BodyVelocityInstance or BodyVelocityInstance.Parent ~= seat then
-                BodyVelocityInstance = Instance.new("BodyVelocity")
-                BodyVelocityInstance.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                BodyVelocityInstance.Velocity = Vector3.new(0, 0, 0)
-                BodyVelocityInstance.Parent = seat
+            -- Nếu bật Chống Lật: Triệt tiêu lực xoay lắc trục X và Z, chỉ cho phép xoay trục Y để quẹo thuyền
+            if Config.AntiFlip then
+                seat.AssemblyAngularVelocity = Vector3.new(0, seat.AssemblyAngularVelocity.Y, 0)
             end
-            
-            if not BodyGyroInstance or BodyGyroInstance.Parent ~= seat then
-                BodyGyroInstance = Instance.new("BodyGyro")
-                BodyGyroInstance.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                BodyGyroInstance.P = 85000 -- Tăng lực siết góc nhìn chống giật lắc
-                BodyGyroInstance.D = 120
-                BodyGyroInstance.Parent = seat
-            end
-            
-            -- Tính toán phím bấm di chuyển
-            local direction = Vector3.new(0, 0, 0)
-            
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                direction = direction + Camera.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                direction = direction - Camera.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                direction = direction - Camera.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                direction = direction + Camera.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                direction = direction + Vector3.new(0, 1, 0) -- Bay lên
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                direction = direction - Vector3.new(0, 1, 0) -- Hạ xuống
-            end
-            
-            if direction.Magnitude > 0 then
-                BodyVelocityInstance.Velocity = direction.Unit * Config.Fly.Speed
-            else
-                BodyVelocityInstance.Velocity = Vector3.new(0, 0, 0)
-            end
-            
-            -- Đồng bộ hóa hướng đầu xe chuẩn xác theo hướng nhìn Camera (Y hệt Character Fly)
-            local targetLook = Camera.CFrame.LookVector
-            BodyGyroInstance.CFrame = CFrame.lookAt(seat.Position, seat.Position + targetLook)
-            
-        else
-            if BodyVelocityInstance then BodyVelocityInstance:Destroy() BodyVelocityInstance = nil end
-            if BodyGyroInstance then BodyGyroInstance:Destroy() BodyGyroInstance = nil end
         end
     end
 end)
 
--- Thông báo nhỏ trong hộp thoại chat để kiểm tra hệ thống hoạt động
+-- Gửi thông báo hệ thống nạp thành công
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Taxi Boss v11.0",
-        Text = "Menu đã được nạp thành công!",
+        Title = "Sail Your Boat",
+        Text = "Menu v12.0 Đã Sẵn Sàng!",
         Duration = 4
     })
 end)
