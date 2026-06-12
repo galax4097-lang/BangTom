@@ -36,21 +36,7 @@ local function ApplySafeParent()
     end
 end
 ApplySafeParent()
-  ESP = {
-        Enabled = true,        
-        Names = true,          
-        Distance = true,       
-        Health = true,         
-        MaxDistance = 300,                    -- MẶC ĐỊNH: Chỉ hiện ESP và AIM trong vòng 300m
-        TeamCheck = false,                    
-        Color = Color3.fromRGB(255, 0, 100) 
-    }
-}
-
-local IsAiming = false
-local MenuVisible = true
-local IsMinimized = false
-local TabFrames = {}
+  
  -- Tạo vòng tròn FOV (Drawing API)
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = Config.Aimbot.Enabled
