@@ -1,112 +1,86 @@
--- [[ RIVALS PREMIUM BRAINROT HUB v3.0 - DISTANCE LINKED AIM & ESP ]]
+-- [[ ASYLUM LIFE PATIENT ESP & AIMBOT SYNC — v14.0 ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- ==================== HỆ THỐNG CẤU HÌNH (SETTINGS) ====================
+-- ==================== CẤU HÌNH ĐỒNG BỘ v14.0 ====================
 local Config = {
-    Aimbot = {
-        Enabled = true,
-        HardLock = true,                      -- Ghim cứng dính chặt không rung
-        Key = Enum.UserInputType.MouseButton2, -- Giữ chuột phải để aim
-        FOV = 200,                             
-        Smoothness = 0.15,                     
-        TargetPart = "Head",                  
-        TeamCheck = false                     
-    },
-    ESP = {
-        Enabled = true,        
-        Names = true,          
-        Distance = true,       
-        Health = true,         
-        MaxDistance = 300,                    -- MẶC ĐỊNH: Chỉ hiện ESP và AIM trong vòng 300m
-        TeamCheck = false,                    
-        Color = Color3.fromRGB(255, 0, 100) 
-    }
+    PatientESP = false,
+    Aimbot = false,
+    Color = Color3.fromRGB(255, 0, 120) -- Màu hồng Neon đặc trưng
 }
 
-local IsAiming = false
 local MenuVisible = true
 local IsMinimized = false
 local TabFrames = {}
+local Highlights = {}
+local AimbotHolding = false
 
--- Tạo vòng tròn FOV (Drawing API)
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Visible = Config.Aimbot.Enabled
-FOVCircle.Filled = false
-FOVCircle.Thickness = 1.5
-FOVCircle.Color = Color3.fromRGB(255, 255, 255)
-FOVCircle.NumSides = 100
-FOVCircle.Radius = Config.Aimbot.FOV
+-- ==================== GETHUI BYPASS (CHỐNG ẨN MENU) ====================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AsylumLifeV14SyncHub"
+ScreenGui.ResetOnSpawn = false
 
--- ==================== BỘ LỌC ĐỘI KIỂM TRA BỆNH NHÂN ====================
-local function IsStrictlyPatient(player)
-    if player and player.Team then
-        local teamName = string.lower(player.Team.Name)
-        
-        -- Nếu thuộc danh sách cảnh sát, bảo vệ hoặc bác sĩ thì loại bỏ hoàn toàn
-        if string.find(teamName, "police") or string.find(teamName, "guard") or 
-           string.find(teamName, "doctor") or string.find(teamName, "nurse") or 
-           string.find(teamName, "bác sĩ") or string.find(teamName, "cảnh sát") or 
-           string.find(teamName, "bảo vệ") then
-            return false
-        end
-        
-        -- Chỉ chấp nhận nếu là bệnh nhân / phạm nhân
-        if string.find(teamName, "patient") or string.find(teamName, "bệnh nhân") or string.find(teamName, "inmate") then
-            return true
+local function ApplySafeParent()
+    if gethui then 
+        ScreenGui.Parent = gethui()
+    else
+        local success, coreGui = pcall(function() return game:GetService("CoreGui") end)
+        if success and coreGui then
+            ScreenGui.Parent = coreGui
+        else
+            ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
         end
     end
-    return false
 end
+ApplySafeParent()
 
--- ==================== TẠO GIAO DIỆN MENU SIDEBAR CHUẨN ẢNH ====================
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BrainrotHubLinked"
-ScreenGui.ResetOnSpawn = false
-pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
-if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
-
+-- ==================== PREMIUM NEON GUI GIAO DIỆN HỒNG NEON ====================
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 520, 0, 340)
-MainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+MainFrame.Size = UDim2.new(0, 520, 0, 320)
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 17)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true 
 MainFrame.Parent = ScreenGui
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 9)
-MainCorner.Parent = MainFrame
-
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(230, 30, 110) 
-UIStroke.Thickness = 1.5
+UIStroke.Color = Color3.fromRGB(255, 0, 120)
+UIStroke.Thickness = 1.6
 UIStroke.Parent = MainFrame
 
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 40)
-TopBar.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
-
-local TopCorner = Instance.new("UICorner")
-TopCorner.CornerRadius = UDim.new(0, 9)
-TopCorner.Parent = TopBar
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 8)
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0.7, 0, 1, 0)
+Title.Size = UDim2.new(0.6, 0, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Brainrot Hub — Distance Linked System"
-Title.TextColor3 = Color3.fromRGB(230, 230, 235)
+Title.Text = "Asylum Life Hub — v14.0 ESP & Aimbot Sync"
+Title.TextColor3 = Color3.fromRGB(240, 240, 245)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 15
+Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0.35, 0, 0, 20)
+StatusLabel.Position = UDim2.new(0.65, -45, 0.5, -10)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Hệ thống: Sẵn sàng"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 120)
+StatusLabel.Font = Enum.Font.SourceSansItalic
+StatusLabel.TextSize = 13
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Right
+StatusLabel.Parent = TopBar
 
 local MinimizeBtn = Instance.new("TextButton")
 MinimizeBtn.Size = UDim2.new(0, 35, 0, 35)
@@ -121,27 +95,25 @@ MinimizeBtn.Parent = TopBar
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 140, 1, -40)
 Sidebar.Position = UDim2.new(0, 0, 0, 40)
-Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainFrame
 
 local Container = Instance.new("Frame")
-Container.Size = UDim2.new(1, -150, 1, -50)
-Container.Position = UDim2.new(0, 145, 0, 45)
+Container.Size = UDim2.new(1, -155, 1, -55)
+Container.Position = UDim2.new(0, 150, 0, 48)
 Container.BackgroundTransparency = 1
 Container.Parent = MainFrame
 
 MinimizeBtn.MouseButton1Click:Connect(function()
     IsMinimized = not IsMinimized
     if IsMinimized then
-        Sidebar.Visible = false
-        Container.Visible = false
+        Sidebar.Visible = false; Container.Visible = false
         MainFrame.Size = UDim2.new(0, 520, 0, 40)
         MinimizeBtn.Text = "[+]"
     else
-        MainFrame.Size = UDim2.new(0, 520, 0, 340)
-        Sidebar.Visible = true
-        Container.Visible = true
+        MainFrame.Size = UDim2.new(0, 520, 0, 320)
+        Sidebar.Visible = true; Container.Visible = true
         MinimizeBtn.Text = "[-]"
     end
 end)
@@ -150,16 +122,15 @@ UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightControl or input.KeyCode == Enum.KeyCode.Insert then
         MenuVisible = not MenuVisible
         MainFrame.Visible = MenuVisible
-        if not MenuVisible then FOVCircle.Visible = false else FOVCircle.Visible = Config.Aimbot.Enabled end
     end
 end)
 
--- ==================== HÀM DỰNG THÀNH PHẦN UI ====================
+-- ==================== HÀM TẠO THÀNH PHẦN GUI ====================
 local function CreateTab(tabName, order)
     local TabBtn = Instance.new("TextButton")
     TabBtn.Size = UDim2.new(0, 120, 0, 35)
     TabBtn.Position = UDim2.new(0, 10, 0, 10 + (order * 40))
-    TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(26, 26, 32)
     TabBtn.Text = tabName
     TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     TabBtn.Font = Enum.Font.SourceSansSemibold
@@ -170,7 +141,7 @@ local function CreateTab(tabName, order)
     local TabFrame = Instance.new("ScrollingFrame")
     TabFrame.Size = UDim2.new(1, 0, 1, 0)
     TabFrame.BackgroundTransparency = 1
-    TabFrame.CanvasSize = UDim2.new(0, 0, 1.6, 0)
+    TabFrame.CanvasSize = UDim2.new(0, 0, 1.2, 0)
     TabFrame.ScrollBarThickness = 2
     TabFrame.Visible = (order == 0)
     TabFrame.Parent = Container
@@ -189,7 +160,7 @@ end
 local function AddToggle(tabFrame, text, default, callback)
     local Row = Instance.new("Frame")
     Row.Size = UDim2.new(1, -10, 0, 38)
-    Row.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+    Row.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
     Row.BorderSizePixel = 0
     Row.Parent = tabFrame
     Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 6)
@@ -213,265 +184,124 @@ local function AddToggle(tabFrame, text, default, callback)
     Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
 
     local State = default
-    local function updateVisual()
-        Switch.BackgroundColor3 = State and Color3.fromRGB(230, 30, 110) or Color3.fromRGB(60, 60, 65)
-    end
+    local function updateVisual() Switch.BackgroundColor3 = State and Color3.fromRGB(255, 0, 120) or Color3.fromRGB(60, 60, 65) end
     updateVisual()
 
-    Switch.MouseButton1Click:Connect(function()
-        State = not State
-        updateVisual()
-        callback(State)
-    end)
+    Switch.MouseButton1Click:Connect(function() State = not State updateVisual() callback(State) end)
 end
 
-local function AddSlider(tabFrame, text, min, max, default, callback)
-    local Row = Instance.new("Frame")
-    Row.Size = UDim2.new(1, -10, 0, 48)
-    Row.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-    Row.BorderSizePixel = 0
-    Row.Parent = tabFrame
-    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 6)
+-- ==================== CÀI ĐẶT CÁC TAB CHỨC NĂNG ====================
+local EspTab = CreateTab("Nhìn Xuyên Tường", 0)
+local AimbotTab = CreateTab("Tự Động Ngắm", 1)
 
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.6, 0, 0, 22)
-    Label.Position = UDim2.new(0, 10, 0, 2)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(210, 210, 215)
-    Label.Font = Enum.Font.SourceSans
-    Label.TextSize = 14
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Row
-
-    local ValueLabel = Instance.new("TextLabel")
-    ValueLabel.Size = UDim2.new(0.3, 0, 0, 22)
-    ValueLabel.Position = UDim2.new(0.7, -10, 0, 2)
-    ValueLabel.BackgroundTransparency = 1
-    ValueLabel.Text = tostring(default)
-    ValueLabel.TextColor3 = Color3.fromRGB(230, 30, 110)
-    ValueLabel.Font = Enum.Font.SourceSansBold
-    ValueLabel.TextSize = 14
-    ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
-    ValueLabel.Parent = Row
-
-    local SliderBar = Instance.new("TextButton")
-    SliderBar.Size = UDim2.new(1, -20, 0, 4)
-    SliderBar.Position = UDim2.new(0, 10, 0, 30)
-    SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-    SliderBar.Text = ""
-    SliderBar.Parent = Row
-
-    local Fill = Instance.new("Frame")
-    Fill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
-    Fill.BackgroundColor3 = Color3.fromRGB(230, 30, 110)
-    Fill.BorderSizePixel = 0
-    Fill.Parent = SliderBar
-
-    local function updateSlider(input)
-        local totalWidth = SliderBar.AbsoluteSize.X
-        local relX = math.clamp(input.Position.X - SliderBar.AbsolutePosition.X, 0, totalWidth)
-        local percentage = relX / totalWidth
-        local value = math.floor(min + (max - min) * percentage)
-        ValueLabel.Text = tostring(value)
-        Fill.Size = UDim2.new(percentage, 0, 1, 0)
-        callback(value)
+AddToggle(EspTab, "Chỉ Hiện Bệnh Nhân (Patient ESP)", Config.PatientESP, function(s)
+    Config.PatientESP = s
+    if not s then
+        -- Xóa sạch ESP khi tắt chức năng
+        for player, highlight in pairs(Highlights) do
+            if highlight then highlight:Destroy() end
+            Highlights[player] = nil
+        end
     end
+end)
 
-    local sliding = false
-    SliderBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = true updateSlider(input) end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if sliding and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end
-    end)
-end
+AddToggle(AimbotTab, "Kích Hoạt Tự Ngắm (Aimbot)", Config.Aimbot, function(s)
+    Config.Aimbot = s
+end)
 
--- Khởi tạo các Tab chức năng
-local CombatTab = CreateTab("Ngắm Bắn (Main)", 0)
-local ESPTab = CreateTab("Hiển Thị (ESP)", 1)
+-- ==================== ENGINE KHÓA VÀ LỌC MỤC TIÊU ĐỒNG BỘ ====================
 
--- Cài đặt mục Combat
-AddToggle(CombatTab, "Bật Tự Động Ngắm (Aimbot)", Config.Aimbot.Enabled, function(s) Config.Aimbot.Enabled = s FOVCircle.Visible = s end)
-AddToggle(CombatTab, "Chế Độ Ghim Cứng (Không Rung)", Config.Aimbot.HardLock, function(s) Config.Aimbot.HardLock = s end)
-AddToggle(CombatTab, "Né Đồng Đội (Team Check)", Config.Aimbot.TeamCheck, function(s) Config.Aimbot.TeamCheck = s end)
-AddSlider(CombatTab, "Kích Thước Vòng Tròn FOV", 50, 500, Config.Aimbot.FOV, function(v) Config.Aimbot.FOV = v FOVCircle.Radius = v end)
-AddSlider(CombatTab, "Độ Mượt Chế Độ Thường (%)", 1, 30, 15, function(v) Config.Aimbot.Smoothness = v / 100 end)
-
--- Cài đặt mục ESP
-AddToggle(ESPTab, "Bật Phát Sáng Người (Chams)", Config.ESP.Enabled, function(s) Config.ESP.Enabled = s if not s then for _, v in ipairs(workspace:GetDescendants()) do if v:IsA("Highlight") and v.Name == "BrainrotESP" then v:Destroy() end end end end)
-AddSlider(ESPTab, "Khoảng Cách ESP Tối Đa (m)", 50, 1000, Config.ESP.MaxDistance, function(v) Config.ESP.MaxDistance = v end)
-AddToggle(ESPTab, "Không Hiện Đồng Đội (Team Check)", Config.ESP.TeamCheck, function(s) Config.ESP.TeamCheck = s end)
-AddToggle(ESPTab, "Hiển Thị Tên Nhân Vật", Config.ESP.Names, function(s) Config.ESP.Names = s end)
-AddToggle(ESPTab, "Hiển Thị Khoảng Cách", Config.ESP.Distance, function(s) Config.ESP.Distance = s end)
-AddToggle(ESPTab, "Hiển Thị Chỉ Số Máu", Config.ESP.Health, function(s) Config.ESP.Health = s end)
-
--- ==================== HỆ THỐNG ESP TEXT CHỮ KHÔNG GIAN GAME ====================
-local function ManageTextESP(player)
-    if player == LocalPlayer then return end
-    
-    local function createGui(char)
-        local head = char:WaitForChild("Head", 5)
-        local hum = char:WaitForChild("Humanoid", 5)
-        if not head or not hum then return end
-
-        local bbg = head:FindFirstChild("RivalsESP_Text") or Instance.new("BillboardGui")
-        bbg.Name = "RivalsESP_Text"
-        bbg.Size = UDim2.new(0, 200, 0, 60)
-        bbg.StudsOffset = Vector3.new(0, 3, 0)
-        bbg.AlwaysOnTop = true
-        bbg.Parent = head
-
-        local ContainerList = bbg:FindFirstChild("Container") or Instance.new("Frame")
-        ContainerList.Name = "Container"
-        ContainerList.Size = UDim2.new(1, 0, 1, 0)
-        ContainerList.BackgroundTransparency = 1
-        ContainerList.Parent = bbg
-
-        local layout = ContainerList:FindFirstChild("Layout") or Instance.new("UIListLayout")
-        layout.Name = "Layout"
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        layout.Parent = ContainerList
-
-        local NameTag = ContainerList:FindFirstChild("NameTag") or Instance.new("TextLabel")
-        NameTag.Name = "NameTag"
-        NameTag.Size = UDim2.new(1, 0, 0, 16)
-        NameTag.BackgroundTransparency = 1
-        NameTag.TextColor3 = Color3.fromRGB(255, 255, 255)
-        NameTag.Font = Enum.Font.SourceSansBold
-        NameTag.TextSize = 14
-        NameTag.Parent = ContainerList
-
-        local InfoTag = ContainerList:FindFirstChild("InfoTag") or Instance.new("TextLabel")
-        InfoTag.Name = "InfoTag"
-        InfoTag.Size = UDim2.new(1, 0, 0, 16)
-        InfoTag.BackgroundTransparency = 1
-        InfoTag.TextColor3 = Color3.fromRGB(0, 255, 150) 
-        InfoTag.Font = Enum.Font.SourceSans
-        InfoTag.TextSize = 13
-        InfoTag.Parent = ContainerList
-
-        local connection
-        connection = RunService.RenderStepped:Connect(function()
-            if not char:IsDescendantOf(workspace) or hum.Health <= 0 then
-                bbg:Destroy()
-                connection:Disconnect()
-                return
-            end
-
-            local dist = math.floor((head.Position - Camera.CFrame.Position).Magnitude)
-
-            -- KIỂM TRA ĐIỀU KIỆN LÒC: Nếu KHÔNG PHẢI BỆNH NHÂN, vượt quá mét, hoặc bật TeamCheck trùng đội
-            if not IsStrictlyPatient(player) or dist > Config.ESP.MaxDistance or (Config.ESP.TeamCheck and player.Team == LocalPlayer.Team) then
-                NameTag.Visible = false
-                InfoTag.Visible = false
-                return
-            end
-
-            NameTag.Visible = Config.ESP.Names
-            NameTag.Text = player.Name
-
-            local infoStr = ""
-            if Config.ESP.Distance then infoStr = infoStr .. "[" .. dist .. "m] " end
-            if Config.ESP.Health then infoStr = infoStr .. "HP: " .. math.floor(hum.Health) end
-            
-            InfoTag.Visible = (Config.ESP.Distance or Config.ESP.Health)
-            InfoTag.Text = infoStr
-        end)
+-- Hàm kiểm tra xem người chơi có thuộc đội Bệnh nhân hay không
+local function IsPatient(player)
+    if player and player.Team then
+        local teamName = string.lower(player.Team.Name)
+        if string.find(teamName, "patient") or string.find(teamName, "bệnh nhân") or string.find(teamName, "inmate") then
+            return true
+        end
     end
-
-    if player.Character then createGui(player.Character) end
-    player.CharacterAdded:Connect(createGui)
+    return false
 end
 
--- ==================== CORE FUNCTION: AIMBOT TRÍ TUỆ LIÊN KẾT ESP ====================
-local function GetClosestPlayer()
-    local Target = nil
-    local MaxDist = Config.Aimbot.FOV
-
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            if Config.Aimbot.TeamCheck and p.Team == LocalPlayer.Team then continue end
-            
-            -- ĐIỀU KIỆN LIÊN KẾT: Chỉ ngắm Bệnh Nhân
-            if not IsStrictlyPatient(p) then continue end
-
-            local head = p.Character:FindFirstChild(Config.Aimbot.TargetPart)
-            local hum = p.Character:FindFirstChildOfClass("Humanoid")
-            
-            if head and hum and hum.Health > 0 then
-                local dist = (head.Position - Camera.CFrame.Position).Magnitude
-                if dist > Config.ESP.MaxDistance then continue end
-
-                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                if onScreen then
-                    local mousePos = UserInputService:GetMouseLocation()
-                    local diff = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-                    if diff < MaxDist then 
-                        MaxDist = diff 
-                        Target = head 
+-- Vòng lặp vẽ và kiểm tra Highlight ESP
+task.spawn(function()
+    while task.wait(0.5) do
+        if Config.PatientESP then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and IsPatient(player) and player.Character then
+                    if not Highlights[player] or not Highlights[player].Parent then
+                        local highlight = Instance.new("Highlight")
+                        highlight.FillColor = Config.Color
+                        highlight.FillTransparency = 0.5
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.OutlineTransparency = 0
+                        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        highlight.Parent = player.Character
+                        Highlights[player] = highlight
                     end
+                elseif Highlights[player] then
+                    -- Nếu người chơi đổi đội hoặc không thỏa mãn điều kiện thì hủy ESP
+                    Highlights[player]:Destroy()
+                    Highlights[player] = nil
                 end
             end
         end
     end
-    return Target
+end)
+
+-- Hàm tìm Bệnh nhân gần tâm chuột nhất dựa trên những người "đang dính ESP"
+local function GetClosestTarget()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    local mousePos = UserInputService:GetMouseLocation()
+
+    -- LUẬT: Nếu không bật ESP, hoặc hệ thống ESP chưa gán thẻ cho ai -> Không thể khóa mục tiêu
+    if not Config.PatientESP then return nil end
+
+    for player, highlight in pairs(Highlights) do
+        if player and player.Character and player.Character:FindFirstChild("Head") and highlight.Parent == player.Character then
+            local head = player.Character.Head
+            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            
+            if onScreen then
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestPlayer = player
+                end
+            end
+        end
+    end
+    return closestPlayer
 end
 
-UserInputService.InputBegan:Connect(function(i, p) if not p then if i.UserInputType == Config.Aimbot.Key then IsAiming = true end end end)
-UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Config.Aimbot.Key then IsAiming = false end end)
+-- Lắng nghe sự kiện click chuột phải để bật Aimbot
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        AimbotHolding = true
+    end
+end)
 
-for _, p in ipairs(Players:GetPlayers()) do ManageTextESP(p) end
-Players.PlayerAdded:Connect(ManageTextESP)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        AimbotHolding = false
+    end
+end)
 
--- ==================== VÒNG LẶP RENDER CHÍNH SỬ DỤNG LIÊN TỤC ====================
+-- Vòng lặp Aimbot mượt mà khóa mục tiêu theo khung hình máy tính
 RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-
-    -- Thực thi khóa tâm ngắm Aimbot liên kết ESP
-    if Config.Aimbot.Enabled and IsAiming then
-        local t = GetClosestPlayer()
-        if t then
-            if Config.Aimbot.HardLock then
-                local rootPart = t.Parent:FindFirstChild("HumanoidRootPart")
-                if rootPart then
-                    local stableTargetPos = rootPart.Position + Vector3.new(0, 1.5, 0) 
-                    Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, stableTargetPos)
-                else
-                    Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, t.Position)
-                end
-            else
-                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, t.Position), Config.Aimbot.Smoothness)
-            end
+    if Config.Aimbot and AimbotHolding and Config.PatientESP then
+        local target = GetClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            -- Điều chỉnh góc Camera xoay thẳng vào vị trí Đầu (Head) của bệnh nhân đang bị ESP bám đuôi
+            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, target.Character.Head.Position)
         end
     end
+end)
 
-    -- Thực thi phát sáng Chams nhân vật dựa trên khoảng cách m
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-            local root = p.Character:FindFirstChild("HumanoidRootPart")
-            if not root then continue end
-            
-            local dist = (root.Position - Camera.CFrame.Position).Magnitude
-            local oldHl = p.Character:FindFirstChild("BrainrotESP")
-
-            -- ĐIỀU KIỆN LỌC SỬA LỖI BIẾN P: Nếu TẮT ESP, vượt quá mét, trùng đội, HOẶC KHÔNG PHẢI BỆNH NHÂN -> Xóa ngay
-            if not Config.ESP.Enabled or not IsStrictlyPatient(p) or (Config.ESP.TeamCheck and p.Team == LocalPlayer.Team) or dist > Config.ESP.MaxDistance then
-                if oldHl then oldHl:Destroy() end
-                continue
-            end
-
-            -- Tạo hiệu ứng phát sáng Chams
-            local hl = oldHl or Instance.new("Highlight")
-            hl.Name = "BrainrotESP"
-            hl.FillColor = Config.ESP.Color
-            hl.OutlineColor = Color3.fromRGB(255, 255, 255) 
-            hl.FillTransparency = 0.4
-            hl.OutlineTransparency = 0.1
-            hl.Parent = p.Character
-        end
+-- Tự động dọn dẹp khi người chơi thoát
+Players.PlayerRemoving:Connect(function(player)
+    if Highlights[player] then
+        Highlights[player]:Destroy()
+        Highlights[player] = nil
     end
 end)
