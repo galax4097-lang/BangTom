@@ -16,9 +16,6 @@ local IsMinimized = false
 local TabFrames = {}
 local Highlights = {}
 local AimbotHolding = false
--- ==================== CẤU HÌNH ĐỒNG BỘ v14.0 ====================
-local Config = {
-    Aimbot = {
         Enabled = true,
         HardLock = true,                      -- Ghim cứng dính chặt không rung
         Key = Enum.UserInputType.MouseButton2, -- Giữ chuột phải để aim
