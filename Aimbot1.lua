@@ -1,23 +1,26 @@
--- [[ ASYLUM LIFE PATIENT ESP — v13.0 NEON BYPASS ]]
+-- [[ ASYLUM LIFE PATIENT ESP & AIMBOT SYNC — v14.0 ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
--- ==================== CẤU HÌNH TÍNH NĂNG ====================
+-- ==================== CẤU HÌNH ĐỒNG BỘ v14.0 ====================
 local Config = {
     PatientESP = false,
-    Color = Color3.fromRGB(255, 0, 120) -- Màu hồng Neon nhận diện bệnh nhân
+    Aimbot = false,
+    Color = Color3.fromRGB(255, 0, 120) -- Màu hồng Neon đặc trưng
 }
 
 local MenuVisible = true
 local IsMinimized = false
 local TabFrames = {}
 local Highlights = {}
+local AimbotHolding = false
 
 -- ==================== GETHUI BYPASS (CHỐNG ẨN MENU) ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AsylumLifeV13Hub"
+ScreenGui.Name = "AsylumLifeV14SyncHub"
 ScreenGui.ResetOnSpawn = false
 
 local function ApplySafeParent()
@@ -34,7 +37,7 @@ local function ApplySafeParent()
 end
 ApplySafeParent()
 
--- ==================== PREMIUM NEON GUI GIAO DIỆN QUEN THUỘC ====================
+-- ==================== PREMIUM NEON GUI GIAO DIỆN HỒNG NEON ====================
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 520, 0, 320)
 MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
@@ -61,7 +64,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0.6, 0, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Asylum Life Hub — v13.0 Chỉ Hiện Bệnh Nhân"
+Title.Text = "Asylum Life Hub — v14.0 ESP & Aimbot Sync"
 Title.TextColor3 = Color3.fromRGB(240, 240, 245)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
@@ -72,8 +75,8 @@ local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(0.35, 0, 0, 20)
 StatusLabel.Position = UDim2.new(0.65, -45, 0.5, -10)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Patient ESP: ĐANG TẮT"
-StatusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+StatusLabel.Text = "Hệ thống: Sẵn sàng"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 120)
 StatusLabel.Font = Enum.Font.SourceSansItalic
 StatusLabel.TextSize = 13
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -187,17 +190,13 @@ local function AddToggle(tabFrame, text, default, callback)
     Switch.MouseButton1Click:Connect(function() State = not State updateVisual() callback(State) end)
 end
 
--- ==================== CÀI ĐẶT TAB & CHỨC NĂNG ESP BIỆT LẬP ====================
+-- ==================== CÀI ĐẶT CÁC TAB CHỨC NĂNG ====================
 local EspTab = CreateTab("Nhìn Xuyên Tường", 0)
+local AimbotTab = CreateTab("Tự Động Ngắm", 1)
 
 AddToggle(EspTab, "Chỉ Hiện Bệnh Nhân (Patient ESP)", Config.PatientESP, function(s)
     Config.PatientESP = s
-    if s then
-        StatusLabel.Text = "Patient ESP: ĐANG BẬT"
-        StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 120)
-    else
-        StatusLabel.Text = "Patient ESP: ĐANG TẮT"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+    if not s then
         -- Xóa sạch ESP khi tắt chức năng
         for player, highlight in pairs(Highlights) do
             if highlight then highlight:Destroy() end
@@ -206,13 +205,16 @@ AddToggle(EspTab, "Chỉ Hiện Bệnh Nhân (Patient ESP)", Config.PatientESP, 
     end
 end)
 
--- ==================== ENGINE QUÉT VÀ LỌC ĐỘI NHÓM CHÍNH XÁC ====================
+AddToggle(AimbotTab, "Kích Hoạt Tự Ngắm (Aimbot)", Config.Aimbot, function(s)
+    Config.Aimbot = s
+end)
 
--- Hàm kiểm tra xem người chơi có phải là Bệnh nhân hay không
+-- ==================== ENGINE KHÓA VÀ LỌC MỤC TIÊU ĐỒNG BỘ ====================
+
+-- Hàm kiểm tra xem người chơi có thuộc đội Bệnh nhân hay không
 local function IsPatient(player)
     if player and player.Team then
         local teamName = string.lower(player.Team.Name)
-        -- Quét các từ khóa liên quan tới Bệnh nhân/Tù nhân trong Asylum Life
         if string.find(teamName, "patient") or string.find(teamName, "bệnh nhân") or string.find(teamName, "inmate") then
             return true
         end
@@ -220,67 +222,86 @@ local function IsPatient(player)
     return false
 end
 
--- Hàm áp dụng viền Highlight lên nhân vật
-local function ApplyHighlight(player)
-    if not Config.PatientESP then return end
-    if player == LocalPlayer then return end -- Không tự bật lên chính mình
-    
-    local character = player.Character
-    if character then
-        -- Nếu đã là Bệnh nhân và chưa được tạo Highlight
-        if IsPatient(player) then
-            if not Highlights[player] or not Highlights[player].Parent then
-                local highlight = Instance.new("Highlight")
-                highlight.FillColor = Config.Color
-                highlight.FillTransparency = 0.5
-                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                highlight.OutlineTransparency = 0
-                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                highlight.Parent = character
-                Highlights[player] = highlight
-            end
-        else
-            -- Nếu đổi sang đội Cảnh sát/Bác sĩ -> Lập tức xóa bỏ viền ngay khung hình tiếp theo
-            if Highlights[player] then
-                Highlights[player]:Destroy()
-                Highlights[player] = nil
-            end
-        end
-    end
-end
-
--- Vòng lặp tối ưu kiểm tra trạng thái toàn Server liên tục mỗi 0.5 giây
+-- Vòng lặp vẽ và kiểm tra Highlight ESP
 task.spawn(function()
     while task.wait(0.5) do
         if Config.PatientESP then
             for _, player in pairs(Players:GetPlayers()) do
-                ApplyHighlight(player)
+                if player ~= LocalPlayer and IsPatient(player) and player.Character then
+                    if not Highlights[player] or not Highlights[player].Parent then
+                        local highlight = Instance.new("Highlight")
+                        highlight.FillColor = Config.Color
+                        highlight.FillTransparency = 0.5
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.OutlineTransparency = 0
+                        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        highlight.Parent = player.Character
+                        Highlights[player] = highlight
+                    end
+                elseif Highlights[player] then
+                    -- Nếu người chơi đổi đội hoặc không thỏa mãn điều kiện thì hủy ESP
+                    Highlights[player]:Destroy()
+                    Highlights[player] = nil
+                end
             end
         end
     end
 end)
 
--- Lắng nghe khi người chơi hồi sinh hoặc đổi ngoại hình
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        task.wait(0.5) -- Chờ nhân vật tải xong hoàn toàn
-        ApplyHighlight(player)
-    end)
+-- Hàm tìm Bệnh nhân gần tâm chuột nhất dựa trên những người "đang dính ESP"
+local function GetClosestTarget()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    local mousePos = UserInputService:GetMouseLocation()
+
+    -- LUẬT: Nếu không bật ESP, hoặc hệ thống ESP chưa gán thẻ cho ai -> Không thể khóa mục tiêu
+    if not Config.PatientESP then return nil end
+
+    for player, highlight in pairs(Highlights) do
+        if player and player.Character and player.Character:FindFirstChild("Head") and highlight.Parent == player.Character then
+            local head = player.Character.Head
+            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            
+            if onScreen then
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestPlayer = player
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+-- Lắng nghe sự kiện click chuột phải để bật Aimbot
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        AimbotHolding = true
+    end
 end)
 
--- Tự động dọn dẹp bộ nhớ khi có người rời server
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        AimbotHolding = false
+    end
+end)
+
+-- Vòng lặp Aimbot mượt mà khóa mục tiêu theo khung hình máy tính
+RunService.RenderStepped:Connect(function()
+    if Config.Aimbot and AimbotHolding and Config.PatientESP then
+        local target = GetClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            -- Điều chỉnh góc Camera xoay thẳng vào vị trí Đầu (Head) của bệnh nhân đang bị ESP bám đuôi
+            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, target.Character.Head.Position)
+        end
+    end
+end)
+
+-- Tự động dọn dẹp khi người chơi thoát
 Players.PlayerRemoving:Connect(function(player)
     if Highlights[player] then
         Highlights[player]:Destroy()
         Highlights[player] = nil
     end
-end)
-
--- Thông báo nạp thành công hệ thống định vị bệnh nhân
-pcall(function()
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Asylum Life ESP",
-        Text = "Đã khóa mục tiêu: Chỉ quét Bệnh Nhân!",
-        Duration = 4
-    })
 end)
