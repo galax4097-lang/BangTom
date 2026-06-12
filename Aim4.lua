@@ -4,7 +4,18 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+------
+local Config = {
+    PatientESP = false,
+    Aimbot = false,
+    Color = Color3.fromRGB(255, 0, 120) -- Màu hồng Neon đặc trưng
+}
 
+local MenuVisible = true
+local IsMinimized = false
+local TabFrames = {}
+local Highlights = {}
+local AimbotHolding = false
 -- ==================== CẤU HÌNH ĐỒNG BỘ v14.0 ====================
 local Config = {
     Aimbot = {
