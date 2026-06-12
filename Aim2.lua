@@ -7,16 +7,39 @@ local Camera = workspace.CurrentCamera
 
 -- ==================== CẤU HÌNH ĐỒNG BỘ v14.0 ====================
 local Config = {
-    PatientESP = false,
-    Aimbot = false,
-    Color = Color3.fromRGB(255, 0, 120) -- Màu hồng Neon đặc trưng
+    Aimbot = {
+        Enabled = true,
+        HardLock = true,                      -- Ghim cứng dính chặt không rung
+        Key = Enum.UserInputType.MouseButton2, -- Giữ chuột phải để aim
+        FOV = 200,                             
+        Smoothness = 0.15,                     
+        TargetPart = "Head",                  
+        TeamCheck = false                     
+    },
+    ESP = {
+        Enabled = true,        
+        Names = true,          
+        Distance = true,       
+        Health = true,         
+        MaxDistance = 300,                    -- MẶC ĐỊNH: Chỉ hiện ESP và AIM trong vòng 300m
+        TeamCheck = false,                    
+        Color = Color3.fromRGB(255, 0, 100) 
+    }
 }
 
+local IsAiming = false
 local MenuVisible = true
 local IsMinimized = false
 local TabFrames = {}
-local Highlights = {}
-local AimbotHolding = false
+
+-- Tạo vòng tròn FOV (Drawing API)
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Visible = Config.Aimbot.Enabled
+FOVCircle.Filled = false
+FOVCircle.Thickness = 1.5
+FOVCircle.Color = Color3.fromRGB(255, 255, 255)
+FOVCircle.NumSides = 100
+FOVCircle.Radius = Config.Aimbot.FOV
 
 -- ==================== GETHUI BYPASS (CHỐNG ẨN MENU) ====================
 local ScreenGui = Instance.new("ScreenGui")
@@ -36,15 +59,7 @@ local function ApplySafeParent()
     end
 end
 ApplySafeParent()
-  
- -- Tạo vòng tròn FOV (Drawing API)
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Visible = Config.Aimbot.Enabled
-FOVCircle.Filled = false
-FOVCircle.Thickness = 1.5
-FOVCircle.Color = Color3.fromRGB(255, 255, 255)
-FOVCircle.NumSides = 100
-FOVCircle.Radius = Config.Aimbot.FOV
+
 -- ==================== PREMIUM NEON GUI GIAO DIỆN HỒNG NEON ====================
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 520, 0, 320)
