@@ -1,17 +1,16 @@
--- [[ ASYLUM LIFE HUB — v14.1 CHỈ THÊM THANH KÉO THEO YÊU CẦU ]]
+-- [[ ASYLUM LIFE HUB — v14.2 CLEAN & STRICT PATIENT ESP ONLY ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- Configuration
+-- Cấu hình mặc định gọn gàng
 local Config = {
     PatientESP = false,
     Aimbot = false,
-    FOVRadius = 200,    -- Giá trị thanh kéo FOV
-    Hardness = 50,      -- Giá trị % độ cứng/mượt khi aim
-    Color = Color3.fromRGB(255, 0, 120) -- Hồng Neon chuẩn mẫu
+    FOVRadius = 150,
+    Color = Color3.fromRGB(255, 0, 120) -- Màu hồng Neon chuẩn gốc
 }
 
 local MenuVisible = true
@@ -20,9 +19,9 @@ local TabFrames = {}
 local Highlights = {}
 local AimbotHolding = false
 
--- ==================== VÒNG TRÒN FOV AN TOÀN (KHÔNG GÂY TREO SCRIPT) ====================
+-- ==================== KHỞI TẠO GUI GỐC v14 (CHỐNG TREO/SẬP) ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AsylumLifeV14_1_Fixed"
+ScreenGui.Name = "AsylumLifeV14_2_Clean"
 ScreenGui.ResetOnSpawn = false
 
 pcall(function()
@@ -31,6 +30,7 @@ pcall(function()
 end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
+-- Vòng tròn FOV dạng khung cơ bản (An toàn tuyệt đối cho mọi Executor)
 local FOVFrame = Instance.new("Frame")
 FOVFrame.Size = UDim2.new(0, Config.FOVRadius * 2, 0, Config.FOVRadius * 2)
 FOVFrame.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -43,12 +43,12 @@ FOVCorner.CornerRadius = UDim.new(1, 0)
 FOVCorner.Parent = FOVFrame
 
 local FOVStroke = Instance.new("UIStroke")
-FOVStroke.Color = Color3.fromRGB(255, 0, 120)
+FOVStroke.Color = Config.Color
 FOVStroke.Thickness = 1
 FOVStroke.Transparency = 0.4
 FOVStroke.Parent = FOVFrame
 
--- ==================== KHUNG GIAO DIỆN CHUẨN GỐC v14 ====================
+-- Khung chính Menu v14
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 520, 0, 320)
 MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
@@ -60,7 +60,7 @@ MainFrame.Parent = ScreenGui
 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
 local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(255, 0, 120)
+UIStroke.Color = Config.Color
 UIStroke.Thickness = 1.4
 UIStroke.Parent = MainFrame
 
@@ -87,7 +87,7 @@ StatusLabel.Size = UDim2.new(0.3, 0, 1, 0)
 StatusLabel.Position = UDim2.new(0.7, -45, 0, 0)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = "Hệ thống: Sẵn sàng"
-StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 120)
+StatusLabel.TextColor3 = Config.Color
 StatusLabel.Font = Enum.Font.SourceSansItalic
 StatusLabel.TextSize = 13
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -116,17 +116,13 @@ Container.Position = UDim2.new(0, 150, 0, 48)
 Container.BackgroundTransparency = 1
 Container.Parent = MainFrame
 
+-- Ẩn hiện nhanh bằng nút hoặc phím tắt
 MinimizeBtn.MouseButton1Click:Connect(function()
     IsMinimized = not IsMinimized
-    if IsMinimized then
-        Sidebar.Visible = false; Container.Visible = false
-        MainFrame.Size = UDim2.new(0, 520, 0, 40)
-        MinimizeBtn.Text = "[+]"
-    else
-        MainFrame.Size = UDim2.new(0, 520, 0, 320)
-        Sidebar.Visible = true; Container.Visible = true
-        MinimizeBtn.Text = "[-]"
-    end
+    Sidebar.Visible = not IsMinimized
+    Container.Visible = not IsMinimized
+    MainFrame.Size = IsMinimized and UDim2.new(0, 520, 0, 40) or UDim2.new(0, 520, 0, 320)
+    MinimizeBtn.Text = IsMinimized and "[+]" or "[-]"
 end)
 
 UserInputService.InputBegan:Connect(function(input)
@@ -136,7 +132,7 @@ UserInputService.InputBegan:Connect(function(input)
     end
 end)
 
--- ==================== HÀM TẠO THÀNH PHẦN GUI v14 GỐC ====================
+-- ==================== HÀM TẠO TAB VÀ TOGGLE GỐC v14 ====================
 local function CreateTab(tabName, order)
     local TabBtn = Instance.new("TextButton")
     TabBtn.Size = UDim2.new(0, 120, 0, 32)
@@ -196,33 +192,32 @@ local function AddToggle(tabFrame, text, default, callback)
     Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
 
     local State = default
-    local function updateVisual() Switch.BackgroundColor3 = State and Color3.fromRGB(255, 0, 120) or Color3.fromRGB(45, 45, 50) end
+    local function updateVisual() Switch.BackgroundColor3 = State and Config.Color or Color3.fromRGB(45, 45, 50) end
     updateVisual()
 
     Switch.MouseButton1Click:Connect(function() State = not State updateVisual() callback(State) end)
 end
 
--- THÀNH PHẦN THANH KÉO (SLIDER) PHẲNG CHUẨN MẪU 1:1 THEO HÌNH
-local function AddSlider(tabFrame, text, min, max, default, callback)
-    local Row = Instance.new("Frame")
-    Row.Size = UDim2.new(1, -5, 0, 45)
-    Row.BackgroundTransparency = 1
-    Row.Parent = tabFrame
+-- Khởi tạo chuẩn 2 Tab chính như ảnh v14
+local EspTab = CreateTab("Nhìn Xuyên Tường", 0)
+local AimTab = CreateTab("Tự Động Ngắm", 1)
 
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.7, 0, 0, 20)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(210, 210, 215)
-    Label.Font = Enum.Font.SourceSans
-    Label.TextSize = 14
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Row
+AddToggle(EspTab, "Chỉ Hiện Bệnh Nhân (Patient ESP)", Config.PatientESP, function(s)
+    Config.PatientESP = s
+    if not s then
+        for player, highlight in pairs(Highlights) do
+            if highlight then highlight:Destroy() end
+            Highlights[player] = nil
+        end
+    end
+end)
 
-    local ValueLabel = Instance.new("TextLabel")
-    ValueLabel.Size = UDim2.new(0.3, 0, 0, 20)
-    ValueLabel.Position = UDim2.new(0.7, 0, 0, 0)
-    ValueLabel.BackgroundTransparency = 1
-    ValueLabel.Text = tostring(default)
-    ValueLabel.TextColor3 = Color3.fromRGB(255, 0, 120)
-    ValueLabel.Font =
+AddToggle(AimTab, "Bật Tự Động Ngắm (Aimbot)", Config.Aimbot, function(s) Config.Aimbot = s end)
+
+-- ==================== BỘ LỌC ĐỘI STRICT (LOẠI CẢNH SÁT & BÁC SĨ) ====================
+local function IsStrictlyPatient(player)
+    if player and player.Team then
+        local teamName = string.lower(player.Team.Name)
+        
+        -- Kiên quyết loại bỏ Cảnh sát, Bảo vệ, Bác sĩ, Y tá khỏi danh sách tạo ESP
+        if string.find(teamName, "police") or string.find(
