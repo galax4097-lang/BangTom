@@ -1,4 +1,4 @@
--- [[ RIVALS PREMIUM BRAINROT HUB v3.5 - GARDEN AUTOMATION & UTILITIES ]]
+-- [[ RIVALS PREMIUM BRAINROT HUB v3.6 - GARDEN DROPDOWN AUTOMATION ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -9,12 +9,13 @@ local Camera = workspace.CurrentCamera
 -- ==================== HỆ THỐNG CẤU HÌNH (SETTINGS) ====================
 local Config = {
     Automation = {
-        AutoBuy = false,       -- Tự động mua hạt giống/vật phẩm
-        AutoSell = false,      -- Tự động bán nông sản kiếm tiền
+        AutoBuy = false,
+        SelectedSeed = "Carrot", -- Hạt giống được chọn mặc định
+        AutoSell = false,
     },
     Character = {
-        SpeedEnabled = false,  -- Bật/tắt tùy chỉnh tốc độ chạy
-        WalkSpeed = 16         -- Tốc độ chạy mặc định
+        SpeedEnabled = false,
+        WalkSpeed = 16
     },
     ESP = {
         Enabled = true,        
@@ -26,11 +27,14 @@ local Config = {
     }
 }
 
+-- Danh sách hạt giống trong game Grow a Garden 2
+local SeedList = {"Carrot", "Tomato", "Pumpkin", "Watermelon", "Berry", "Wheat"}
+
 local MenuVisible = true
 local IsMinimized = false
 local TabFrames = {}
 
--- ==================== TẠO GIAO DIỆN MENU SIDEBAR CHUẨN ====================
+-- ==================== TẠO GIAO DIỆN MENU GUI ====================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BrainrotHubGarden"
 ScreenGui.ResetOnSpawn = false
@@ -137,7 +141,7 @@ local function CreateTab(tabName, order)
     local TabFrame = Instance.new("ScrollingFrame")
     TabFrame.Size = UDim2.new(1, 0, 1, 0)
     TabFrame.BackgroundTransparency = 1
-    TabFrame.CanvasSize = UDim2.new(0, 0, 1.6, 0)
+    TabFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
     TabFrame.ScrollBarThickness = 2
     TabFrame.Visible = (order == 0)
     TabFrame.Parent = Container
@@ -192,230 +196,83 @@ local function AddToggle(tabFrame, text, default, callback)
     end)
 end
 
-local function AddSlider(tabFrame, text, min, max, default, callback)
-    local Row = Instance.new("Frame")
-    Row.Size = UDim2.new(1, -10, 0, 48)
-    Row.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-    Row.BorderSizePixel = 0
-    Row.Parent = tabFrame
-    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 6)
+-- HÀM MỚI: Thêm Dropdown lựa chọn hạt giống có nút mũi tên bung rộng mở rộng mục
+local function AddDropdown(tabFrame, text, list, default, callback)
+    local DropdownContainer = Instance.new("Frame")
+    DropdownContainer.Size = UDim2.new(1, -10, 0, 40)
+    DropdownContainer.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+    DropdownContainer.ClipsDescendants = true
+    DropdownContainer.Parent = tabFrame
+    Instance.new("UICorner", DropdownContainer).CornerRadius = UDim.new(0, 6)
+
+    local MainRow = Instance.new("TextButton")
+    MainRow.Size = UDim2.new(1, 0, 0, 40)
+    MainRow.BackgroundTransparency = 1
+    MainRow.Text = ""
+    MainRow.Parent = DropdownContainer
 
     local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.6, 0, 0, 22)
-    Label.Position = UDim2.new(0, 10, 0, 2)
+    Label.Size = UDim2.new(0.6, 0, 1, 0)
+    Label.Position = UDim2.new(0, 10, 0, 0)
     Label.BackgroundTransparency = 1
-    Label.Text = text
+    Label.Text = text .. " (" .. default .. ")"
     Label.TextColor3 = Color3.fromRGB(210, 210, 215)
     Label.Font = Enum.Font.SourceSans
     Label.TextSize = 14
     Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Row
+    Label.Parent = MainRow
 
-    local ValueLabel = Instance.new("TextLabel")
-    ValueLabel.Size = UDim2.new(0.3, 0, 0, 22)
-    ValueLabel.Position = UDim2.new(0.7, -10, 0, 2)
-    ValueLabel.BackgroundTransparency = 1
-    ValueLabel.Text = tostring(default)
-    ValueLabel.TextColor3 = Color3.fromRGB(230, 30, 110)
-    ValueLabel.Font = Enum.Font.SourceSansBold
-    ValueLabel.TextSize = 14
-    ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
-    ValueLabel.Parent = Row
+    local Arrow = Instance.new("TextLabel")
+    Arrow.Size = UDim2.new(0, 30, 0, 30)
+    Arrow.Position = UDim2.new(1, -40, 0, 5)
+    Arrow.BackgroundTransparency = 1
+    Arrow.Text = "▼"
+    Arrow.TextColor3 = Color3.fromRGB(230, 30, 110)
+    Arrow.Font = Enum.Font.SourceSansBold
+    Arrow.TextSize = 14
+    Arrow.Parent = MainRow
 
-    local SliderBar = Instance.new("TextButton")
-    SliderBar.Size = UDim2.new(1, -20, 0, 4)
-    SliderBar.Position = UDim2.new(0, 10, 0, 30)
-    SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-    SliderBar.Text = ""
-    SliderBar.Parent = Row
+    local ListFrame = Instance.new("Frame")
+    ListFrame.Size = UDim2.new(1, -20, 0, #list * 30)
+    ListFrame.Position = UDim2.new(0, 10, 0, 40)
+    ListFrame.BackgroundTransparency = 1
+    ListFrame.Parent = DropdownContainer
 
-    local Fill = Instance.new("Frame")
-    Fill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
-    Fill.BackgroundColor3 = Color3.fromRGB(230, 30, 110)
-    Fill.BorderSizePixel = 0
-    Fill.Parent = SliderBar
+    local UIList = Instance.new("UIListLayout")
+    UIList.Padding = UDim.new(0, 2)
+    UIList.Parent = ListFrame
 
-    local function updateSlider(input)
-        local totalWidth = SliderBar.AbsoluteSize.X
-        local relX = math.clamp(input.Position.X - SliderBar.AbsolutePosition.X, 0, totalWidth)
-        local percentage = relX / totalWidth
-        local value = math.floor(min + (max - min) * percentage)
-        ValueLabel.Text = tostring(value)
-        Fill.Size = UDim2.new(percentage, 0, 1, 0)
-        callback(value)
-    end
+    local IsOpen = false
+    local ItemButtons = {}
 
-    local sliding = false
-    SliderBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = true updateSlider(input) end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if sliding and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end
-    end)
-end
-
--- ==================== KHỞI TẠO CÁC TAB CHỨC NĂNG ====================
-local GardenTab = CreateTab("Nông Trại (Main)", 0)
-local PlayerTab = CreateTab("Bản Thân & ESP", 1)
-
--- Cài đặt mục Tự động hóa Nông trại
-AddToggle(GardenTab, "Tự Động Mua Hạt Giống (Auto Buy)", Config.Automation.AutoBuy, function(s) Config.Automation.AutoBuy = s end)
-AddToggle(GardenTab, "Tự Động Bán Nông Sản (Auto Sell)", Config.Automation.AutoSell, function(s) Config.Automation.AutoSell = s end)
-
--- Cài đặt mục Nhân vật & ESP
-AddToggle(PlayerTab, "Kích Hoạt Tùy Chỉnh Tốc Độ", Config.Character.SpeedEnabled, function(s) Config.Character.SpeedEnabled = s end)
-AddSlider(PlayerTab, "Điều Chỉnh Tốc Độ (WalkSpeed)", 16, 150, Config.Character.WalkSpeed, function(v) Config.Character.WalkSpeed = v end)
-AddToggle(PlayerTab, "Bật Định Vị Người Chơi (ESP)", Config.ESP.Enabled, function(s) Config.ESP.Enabled = s if not s then for _, v in ipairs(workspace:GetDescendants()) do if v:IsA("Highlight") and v.Name == "GardenESP" then v:Destroy() end end end end)
-AddSlider(PlayerTab, "Khoảng Cách Định Vị Tối Đa (m)", 50, 1500, Config.ESP.MaxDistance, function(v) Config.ESP.MaxDistance = v end)
-
--- ==================== LOGIC GAMEPLAY: TỰ ĐỘNG MUA & BÁN NÔNG SẢN ====================
-task.spawn(function()
-    while task.wait(1) do
-        -- Tính năng Tự Động Mua (Quét qua các hệ thống Remote Event mua hàng phổ biến của dòng game Garden)
-        if Config.Automation.AutoBuy then
-            pcall(function()
-                -- Thay đổi tên Hạt giống / Item dựa theo ý muốn tại đây
-                local shopRemote = ReplicatedStorage:FindFirstChild("BuyItem", true) or ReplicatedStorage:FindFirstChild("PurchasePrompt", true)
-                if shopRemote and shopRemote:IsA("RemoteEvent") then
-                    shopRemote:FireServer("Seeds", 1) -- Gửi tín hiệu mua hạt giống lên server
-                end
-            end)
-        end
-        
-        -- Tính năng Tự Động Bán (Quét qua vị trí quầy bán nông sản tự động)
-        if Config.Automation.AutoSell then
-            pcall(function()
-                local sellRemote = ReplicatedStorage:FindFirstChild("SellEverything", true) or ReplicatedStorage:FindFirstChild("SellItems", true) or ReplicatedStorage:FindFirstChild("Sell", true)
-                if sellRemote and sellRemote:IsA("RemoteEvent") then
-                    sellRemote:FireServer()
-                else
-                    -- Nếu game dùng phương thức chạm (Touch) vào hòm để bán hàng:
-                    local sellPart = workspace:FindFirstChild("SellPart", true) or workspace:FindFirstChild("SellStation", true) or workspace:FindFirstChild("Merchant", true)
-                    if sellPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, sellPart, 0)
-                        task.wait(0.1)
-                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, sellPart, 1)
-                    end
-                end
-            end)
+    local function RefreshSelection(selectedName)
+        Label.Text = text .. " (" .. selectedName .. ")"
+        for name, btn in pairs(ItemButtons) do
+            if name == selectedName then
+                -- Đổi màu chữ thành Trắng tinh khi được chọn kích hoạt
+                btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                btn.BackgroundColor3 = Color3.fromRGB(230, 30, 110)
+            else
+                btn.TextColor3 = Color3.fromRGB(160, 160, 165)
+                btn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+            end
         end
     end
-end)
 
--- ==================== HỆ THỐNG ESP TEXT CHỮ TRÊN ĐẦU ====================
-local function ManageTextESP(player)
-    if player == LocalPlayer then return end
-    
-    local function createGui(char)
-        local head = char:WaitForChild("Head", 5)
-        local hum = char:WaitForChild("Humanoid", 5)
-        if not head or not hum then return end
+    for _, itemName in ipairs(list) do
+        local ItemBtn = Instance.new("TextButton")
+        ItemBtn.Size = UDim2.new(1, 0, 0, 28)
+        ItemBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+        ItemBtn.Text = "   " .. itemName
+        ItemBtn.TextXAlignment = Enum.TextXAlignment.Left
+        ItemBtn.Font = Enum.Font.SourceSansSemibold
+        ItemBtn.TextSize = 13
+        ItemBtn.Parent = ListFrame
+        Instance.new("UICorner", ItemBtn).CornerRadius = UDim.new(0, 4)
 
-        local bbg = head:FindFirstChild("GardenESP_Text") or Instance.new("BillboardGui")
-        bbg.Name = "GardenESP_Text"
-        bbg.Size = UDim2.new(0, 200, 0, 60)
-        bbg.StudsOffset = Vector3.new(0, 3, 0)
-        bbg.AlwaysOnTop = true
-        bbg.Parent = head
+        ItemButtons[itemName] = ItemBtn
 
-        local ContainerList = bbg:FindFirstChild("Container") or Instance.new("Frame")
-        ContainerList.Name = "Container"
-        ContainerList.Size = UDim2.new(1, 0, 1, 0)
-        ContainerList.BackgroundTransparency = 1
-        ContainerList.Parent = bbg
-
-        local layout = ContainerList:FindFirstChild("Layout") or Instance.new("UIListLayout")
-        layout.Name = "Layout"
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        layout.Parent = ContainerList
-
-        local NameTag = ContainerList:FindFirstChild("NameTag") or Instance.new("TextLabel")
-        NameTag.Name = "NameTag"
-        NameTag.Size = UDim2.new(1, 0, 0, 16)
-        NameTag.BackgroundTransparency = 1
-        NameTag.TextColor3 = Color3.fromRGB(255, 255, 255)
-        NameTag.Font = Enum.Font.SourceSansBold
-        NameTag.TextSize = 14
-        NameTag.Parent = ContainerList
-
-        local InfoTag = ContainerList:FindFirstChild("InfoTag") or Instance.new("TextLabel")
-        InfoTag.Name = "InfoTag"
-        InfoTag.Size = UDim2.new(1, 0, 0, 16)
-        InfoTag.BackgroundTransparency = 1
-        InfoTag.TextColor3 = Color3.fromRGB(0, 255, 150) 
-        InfoTag.Font = Enum.Font.SourceSans
-        InfoTag.TextSize = 13
-        InfoTag.Parent = ContainerList
-
-        local connection
-        connection = RunService.RenderStepped:Connect(function()
-            if not char:IsDescendantOf(workspace) or hum.Health <= 0 then
-                bbg:Destroy()
-                connection:Disconnect()
-                return
-            end
-
-            local dist = math.floor((head.Position - Camera.CFrame.Position).Magnitude)
-
-            -- Điều kiện ẩn hiển thị chữ định vị
-            if not Config.ESP.Enabled or dist > Config.ESP.MaxDistance then
-                NameTag.Visible = false
-                InfoTag.Visible = false
-                return
-            end
-
-            NameTag.Visible = Config.ESP.Names
-            NameTag.Text = player.Name
-
-            local infoStr = ""
-            if Config.ESP.Distance then infoStr = infoStr .. "[" .. dist .. "m] " end
-            if Config.ESP.Health then infoStr = infoStr .. "HP: " .. math.floor(hum.Health) end
-            
-            InfoTag.Visible = (Config.ESP.Distance or Config.ESP.Health)
-            InfoTag.Text = infoStr
-        end)
-    end
-
-    if player.Character then createGui(player.Character) end
-    player.CharacterAdded:Connect(createGui)
-end
-
-for _, p in ipairs(Players:GetPlayers()) do ManageTextESP(p) end
-Players.PlayerAdded:Connect(ManageTextESP)
-
--- ==================== VÒNG LẶP RENDER TICK (TỐC ĐỘ & PHÁT SÁNG CHAMS) ====================
-RunService.RenderStepped:Connect(function()
-    -- Thực thi ép/chỉnh tốc độ chạy WalkSpeed liên tục
-    if Config.Character.SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid.WalkSpeed = Config.Character.WalkSpeed
-    end
-
-    -- Thực thi xử lý hiệu ứng phát sáng Chams
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-            local root = p.Character:FindFirstChild("HumanoidRootPart")
-            if not root then continue end
-            
-            local dist = (root.Position - Camera.CFrame.Position).Magnitude
-            local oldHl = p.Character:FindFirstChild("GardenESP")
-
-            -- Nếu tắt tính năng hoặc quá khoảng cách quy định thì gỡ phát sáng ngay lập tức
-            if not Config.ESP.Enabled or dist > Config.ESP.MaxDistance then
-                if oldHl then oldHl:Destroy() end
-                continue
-            end
-
-            -- Áp dụng Highlight phát sáng xuyên tường
-            local hl = oldHl or Instance.new("Highlight")
-            hl.Name = "GardenESP"
-            hl.FillColor = Config.ESP.Color
-            hl.OutlineColor = Color3.fromRGB(255, 255, 255) 
-            hl.FillTransparency = 0.4
-            hl.OutlineTransparency = 0.1
-            hl.Parent = p.Character
-        end
-    end
-end)
+        ItemBtn.MouseButton1Click:Connect(function()
+            Config.Automation.SelectedSeed = itemName
+            RefreshSelection(itemName)
+            callback(itemName)
