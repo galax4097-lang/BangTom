@@ -1,4 +1,4 @@
--- [[ RIVALS PREMIUM BRAINROT HUB v3.6 - GARDEN DROPDOWN AUTOMATION ]]
+-- [[ GAG HUB REMAKE — GROW A GARDEN 2 ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,7 +10,7 @@ local Camera = workspace.CurrentCamera
 local Config = {
     Automation = {
         AutoBuy = false,
-        SelectedSeed = "Carrot", -- Hạt giống được chọn mặc định
+        SelectedSeed = "Carrot", 
         AutoSell = false,
     },
     Character = {
@@ -18,261 +18,96 @@ local Config = {
         WalkSpeed = 16
     },
     ESP = {
-        Enabled = true,        
+        Enabled = false,        
         Names = true,          
         Distance = true,       
-        Health = true,         
         MaxDistance = 500,     
-        Color = Color3.fromRGB(255, 0, 100) 
+        Color = Color3.fromRGB(0, 255, 150) 
     }
 }
 
--- Danh sách hạt giống trong game Grow a Garden 2
 local SeedList = {"Carrot", "Tomato", "Pumpkin", "Watermelon", "Berry", "Wheat"}
-
 local MenuVisible = true
 local IsMinimized = false
+local TabButtons = {}
 local TabFrames = {}
 
--- ==================== TẠO GIAO DIỆN MENU GUI ====================
+-- ==================== TẠO GIAO DIỆN CHUẨN GAG HUB ====================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BrainrotHubGarden"
+ScreenGui.Name = "GAG_Hub_Remake"
 ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 520, 0, 340)
-MainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+MainFrame.Size = UDim2.new(0, 480, 0, 310)
+MainFrame.Position = UDim2.new(0.35, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 24) -- Màu tối mờ chuẩn ảnh
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true 
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 9)
+MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(230, 30, 110) 
-UIStroke.Thickness = 1.5
-UIStroke.Parent = MainFrame
-
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 40)
-TopBar.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-TopBar.BorderSizePixel = 0
-TopBar.Parent = MainFrame
-
-local TopCorner = Instance.new("UICorner")
-TopCorner.CornerRadius = UDim.new(0, 9)
-TopCorner.Parent = TopBar
+-- Thanh tiêu đề đầu (Header)
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 35)
+Header.BackgroundTransparency = 1
+Header.Parent = MainFrame
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0.7, 0, 1, 0)
+Title.Size = UDim2.new(0.5, 0, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Brainrot Hub — Grow a Garden 2 Edition"
-Title.TextColor3 = Color3.fromRGB(230, 230, 235)
+Title.Text = "GAG Hub"
+Title.TextColor3 = Color3.fromRGB(220, 220, 220)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 15
+Title.TextSize = 16
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
+Title.Parent = Header
 
-local MinimizeBtn = Instance.new("TextButton")
-MinimizeBtn.Size = UDim2.new(0, 35, 0, 35)
-MinimizeBtn.Position = UDim2.new(1, -45, 0, 2)
-MinimizeBtn.BackgroundTransparency = 1
-MinimizeBtn.Text = "[-]"
-MinimizeBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-MinimizeBtn.Font = Enum.Font.SourceSansBold
-MinimizeBtn.TextSize = 18
-MinimizeBtn.Parent = TopBar
+-- Nút thu nhỏ / phóng to góc phải giống hệ thống gốc
+local WindowControls = Instance.new("TextButton")
+WindowControls.Size = UDim2.new(0, 40, 0, 35)
+WindowControls.Position = UDim2.new(1, -45, 0, 0)
+WindowControls.BackgroundTransparency = 1
+WindowControls.Text = "—  🗖"
+WindowControls.TextColor3 = Color3.fromRGB(180, 180, 180)
+WindowControls.Font = Enum.Font.SourceSans
+WindowControls.TextSize = 14
+WindowControls.Parent = Header
 
+-- Menu Sidebar trái
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 140, 1, -40)
-Sidebar.Position = UDim2.new(0, 0, 0, 40)
-Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-Sidebar.BorderSizePixel = 0
+Sidebar.Size = UDim2.new(0, 120, 1, -40)
+Sidebar.Position = UDim2.new(0, 5, 0, 35)
+Sidebar.BackgroundTransparency = 1
 Sidebar.Parent = MainFrame
 
+local SidebarLayout = Instance.new("UIListLayout")
+SidebarLayout.Padding = UDim.new(0, 3)
+SidebarLayout.Parent = Sidebar
+
+-- Vùng chứa nội dung bên phải
 local Container = Instance.new("Frame")
-Container.Size = UDim2.new(1, -150, 1, -50)
-Container.Position = UDim2.new(0, 145, 0, 45)
+Container.Size = UDim2.new(1, -140, 1, -45)
+Container.Position = UDim2.new(0, 130, 0, 40)
 Container.BackgroundTransparency = 1
 Container.Parent = MainFrame
 
-MinimizeBtn.MouseButton1Click:Connect(function()
+-- Xử lý thu nhỏ (Minimize) khi ấn nút góc phải
+WindowControls.MouseButton1Click:Connect(function()
     IsMinimized = not IsMinimized
     if IsMinimized then
         Sidebar.Visible = false
         Container.Visible = false
-        MainFrame.Size = UDim2.new(0, 520, 0, 40)
-        MinimizeBtn.Text = "[+]"
+        MainFrame.Size = UDim2.new(0, 480, 0, 35)
     else
-        MainFrame.Size = UDim2.new(0, 520, 0, 340)
+        MainFrame.Size = UDim2.new(0, 480, 0, 310)
         Sidebar.Visible = true
         Container.Visible = true
-        MinimizeBtn.Text = "[-]"
     end
-end)
-
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.RightControl or input.KeyCode == Enum.KeyCode.Insert then
-        MenuVisible = not MenuVisible
-        MainFrame.Visible = MenuVisible
-    end
-end)
-
--- ==================== HÀM DỰNG THÀNH PHẦN UI ====================
-local function CreateTab(tabName, order)
-    local TabBtn = Instance.new("TextButton")
-    TabBtn.Size = UDim2.new(0, 120, 0, 35)
-    TabBtn.Position = UDim2.new(0, 10, 0, 10 + (order * 40))
-    TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
-    TabBtn.Text = tabName
-    TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabBtn.Font = Enum.Font.SourceSansSemibold
-    TabBtn.TextSize = 14
-    TabBtn.Parent = Sidebar
-    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
-
-    local TabFrame = Instance.new("ScrollingFrame")
-    TabFrame.Size = UDim2.new(1, 0, 1, 0)
-    TabFrame.BackgroundTransparency = 1
-    TabFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
-    TabFrame.ScrollBarThickness = 2
-    TabFrame.Visible = (order == 0)
-    TabFrame.Parent = Container
-    
-    local UIList = Instance.new("UIListLayout")
-    UIList.Padding = UDim.new(0, 6)
-    UIList.Parent = TabFrame
-
-    TabFrames[tabName] = TabFrame
-    TabBtn.MouseButton1Click:Connect(function()
-        for k, v in pairs(TabFrames) do v.Visible = (k == tabName) end
-    end)
-    return TabFrame
 end
-
-local function AddToggle(tabFrame, text, default, callback)
-    local Row = Instance.new("Frame")
-    Row.Size = UDim2.new(1, -10, 0, 38)
-    Row.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-    Row.BorderSizePixel = 0
-    Row.Parent = tabFrame
-    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 6)
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.7, 0, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(210, 210, 215)
-    Label.Font = Enum.Font.SourceSans
-    Label.TextSize = 14
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Row
-
-    local Switch = Instance.new("TextButton")
-    Switch.Size = UDim2.new(0, 42, 0, 20)
-    Switch.Position = UDim2.new(1, -52, 0, 9)
-    Switch.Text = ""
-    Switch.Parent = Row
-    Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
-
-    local State = default
-    local function updateVisual()
-        Switch.BackgroundColor3 = State and Color3.fromRGB(230, 30, 110) or Color3.fromRGB(60, 60, 65)
-    end
-    updateVisual()
-
-    Switch.MouseButton1Click:Connect(function()
-        State = not State
-        updateVisual()
-        callback(State)
-    end)
-end
-
--- HÀM MỚI: Thêm Dropdown lựa chọn hạt giống có nút mũi tên bung rộng mở rộng mục
-local function AddDropdown(tabFrame, text, list, default, callback)
-    local DropdownContainer = Instance.new("Frame")
-    DropdownContainer.Size = UDim2.new(1, -10, 0, 40)
-    DropdownContainer.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-    DropdownContainer.ClipsDescendants = true
-    DropdownContainer.Parent = tabFrame
-    Instance.new("UICorner", DropdownContainer).CornerRadius = UDim.new(0, 6)
-
-    local MainRow = Instance.new("TextButton")
-    MainRow.Size = UDim2.new(1, 0, 0, 40)
-    MainRow.BackgroundTransparency = 1
-    MainRow.Text = ""
-    MainRow.Parent = DropdownContainer
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.6, 0, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text .. " (" .. default .. ")"
-    Label.TextColor3 = Color3.fromRGB(210, 210, 215)
-    Label.Font = Enum.Font.SourceSans
-    Label.TextSize = 14
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = MainRow
-
-    local Arrow = Instance.new("TextLabel")
-    Arrow.Size = UDim2.new(0, 30, 0, 30)
-    Arrow.Position = UDim2.new(1, -40, 0, 5)
-    Arrow.BackgroundTransparency = 1
-    Arrow.Text = "▼"
-    Arrow.TextColor3 = Color3.fromRGB(230, 30, 110)
-    Arrow.Font = Enum.Font.SourceSansBold
-    Arrow.TextSize = 14
-    Arrow.Parent = MainRow
-
-    local ListFrame = Instance.new("Frame")
-    ListFrame.Size = UDim2.new(1, -20, 0, #list * 30)
-    ListFrame.Position = UDim2.new(0, 10, 0, 40)
-    ListFrame.BackgroundTransparency = 1
-    ListFrame.Parent = DropdownContainer
-
-    local UIList = Instance.new("UIListLayout")
-    UIList.Padding = UDim.new(0, 2)
-    UIList.Parent = ListFrame
-
-    local IsOpen = false
-    local ItemButtons = {}
-
-    local function RefreshSelection(selectedName)
-        Label.Text = text .. " (" .. selectedName .. ")"
-        for name, btn in pairs(ItemButtons) do
-            if name == selectedName then
-                -- Đổi màu chữ thành Trắng tinh khi được chọn kích hoạt
-                btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                btn.BackgroundColor3 = Color3.fromRGB(230, 30, 110)
-            else
-                btn.TextColor3 = Color3.fromRGB(160, 160, 165)
-                btn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
-            end
-        end
-    end
-
-    for _, itemName in ipairs(list) do
-        local ItemBtn = Instance.new("TextButton")
-        ItemBtn.Size = UDim2.new(1, 0, 0, 28)
-        ItemBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
-        ItemBtn.Text = "   " .. itemName
-        ItemBtn.TextXAlignment = Enum.TextXAlignment.Left
-        ItemBtn.Font = Enum.Font.SourceSansSemibold
-        ItemBtn.TextSize = 13
-        ItemBtn.Parent = ListFrame
-        Instance.new("UICorner", ItemBtn).CornerRadius = UDim.new(0, 4)
-
-        ItemButtons[itemName] = ItemBtn
-
-        ItemBtn.MouseButton1Click:Connect(function()
-            Config.Automation.SelectedSeed = itemName
-            RefreshSelection(itemName)
-            callback(itemName)
